@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block title %}Historial - {{ paciente.nombre }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div style="margin-bottom: 30px; display: flex; align-items: center; gap: 15px;">
+        <a href="{% url 'dashboard' %}"
+            style="color: var(--teal); text-decoration: none; font-size: 0.8rem; font-weight: 700;">← VOLVER</a>
+        <h1 style="font-weight: 800; font-size: 1.5rem; letter-spacing: -0.04em;">HISTORIAL: {{ paciente.nombre|upper }}
+        </h1>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 3fr; gap: 20px;">
+        <div class="mockup">
+            <h3
+                style="font-size: 0.7rem; color: var(--muted); font-weight: 800; text-transform: uppercase; margin-bottom: 15px;">
+                Datos Clínicos</h3>
+            <div style="margin-bottom: 15px;">
+                <p style="font-size: 0.65rem; color: var(--muted); margin-bottom: 4px;">DNI</p>
+                <p style="font-weight: 600; font-size: 0.9rem;">{{ paciente.dni }}</p>
+            </div>
+            <div style="margin-bottom: 15px;">
+                <p style="font-size: 0.65rem; color: var(--muted); margin-bottom: 4px;">DIAGNÓSTICO</p>
+                <p style="font-weight: 600; font-size: 0.9rem; color: var(--teal);">{{ paciente.enfermedad }}</p>
+            </div>
+            <div style="margin-bottom: 15px;">
+                <p style="font-size: 0.65rem; color: var(--muted); margin-bottom: 4px;">FECHA DE ALTA</p>
+                <p style="font-weight: 600; font-size: 0.9rem;">{{ paciente.fecha_registro|date:"d M Y" }}</p>
+            </div>
+        </div>
+
+        <div class="mockup">
+            <h3
+                style="font-size: 0.7rem; color: var(--muted); font-weight: 800; text-transform: uppercase; margin-bottom: 20px;">
+                Registros de Telemonitoreo (S2)</h3>
+
+            <div
+                style="display: grid; grid-template-columns: 1.5fr 1fr 1fr 100px; padding: 12px; font-size: 0.65rem; font-weight: 800; color: var(--muted); border-bottom: 1px solid var(--border);">
+                <div>FECHA Y HORA</div>
+                <div>TIPO</div>
+                <div>VALOR</div>
+                <div style="text-align: right;">ESTADO</div>
+            </div>
+
+            {% for m in metricas %}
+            <div
+                style="display: grid; grid-template-columns: 1.5fr 1fr 1fr 100px; padding: 14px 12px; font-size: 0.85rem; border-bottom: 1px solid var(--border); align-items: center;">
+                <div style="color: var(--muted); font-family: monospace;">{{ m.fecha|date:"d/m/y H:i" }}</div>
+                <div style="font-weight: 600;">{{ m.tipo }}</div>
+                <div style="font-weight: 700; font-family: monospace;">{{ m.valor }}</div>
+                <div style="display: flex; justify-content: flex-end;">
+                    {% if m.alerta %}
+                    <span
+                        style="font-size: 0.6rem; font-weight: 800; padding: 2px 8px; border-radius: 4px; background: rgba(255, 71, 87, 0.1); color: var(--alert); border: 1px solid rgba(255, 71, 87, 0.2);">ALERTA</span>
+                    {% else %}
+                    <span
+                        style="font-size: 0.6rem; font-weight: 800; padding: 2px 8px; border-radius: 4px; background: rgba(46, 213, 115, 0.1); color: var(--ok); border: 1px solid rgba(46, 213, 115, 0.2);">NORMAL</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% empty %}
+            <div style="padding: 60px; text-align: center; color: var(--muted); font-size: 0.8rem;">
+                No existen mediciones históricas para este paciente.
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

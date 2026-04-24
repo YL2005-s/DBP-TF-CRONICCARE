@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard Médico{% endblock %}
+
+{% block content %}
+<div class="container">
+    <header style="margin-bottom: 40px; display: flex; justify-content: space-between; align-items: flex-end;">
+        <div>
+            <h1 style="font-weight: 800; font-size: 1.8rem; letter-spacing: -0.04em;">PANEL DE CONTROL</h1>
+            <p style="color: var(--muted); font-size: 0.9rem;">Estado actual de la red de telemonitoreo</p>
+        </div>
+        <div
+            style="font-size: 0.7rem; font-weight: 700; color: var(--teal); border: 1px solid var(--teal); padding: 6px 14px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.05em;">
+            Sistema Operativo
+        </div>
+    </header>
+
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 40px;">
+        <div class="mockup">
+            <div
+                style="font-size: 0.65rem; color: var(--muted); font-weight: 800; text-transform: uppercase; margin-bottom: 10px;">
+                Pacientes Totales</div>
+            <div style="font-size: 2.2rem; font-weight: 800;">{{ pacientes.count }}</div>
+        </div>
+        <div class="mockup" style="border-left: 4px solid var(--ok);">
+            <div
+                style="font-size: 0.65rem; color: var(--muted); font-weight: 800; text-transform: uppercase; margin-bottom: 10px;">
+                En Rango Seguro</div>
+            <div style="font-size: 2.2rem; font-weight: 800; color: var(--ok);">{{ pacientes.count }}</div>
+        </div>
+        <div class="mockup" style="border-left: 4px solid var(--alert);">
+            <div
+                style="font-size: 0.65rem; color: var(--muted); font-weight: 800; text-transform: uppercase; margin-bottom: 10px;">
+                Alertas Críticas</div>
+            <div style="font-size: 2.2rem; font-weight: 800; color: var(--alert);">0</div>
+        </div>
+        <div class="mockup">
+            <div
+                style="font-size: 0.65rem; color: var(--muted); font-weight: 800; text-transform: uppercase; margin-bottom: 10px;">
+                Latencia de Red</div>
+            <div style="font-size: 1rem; font-weight: 800; margin-top: 18px; font-family: monospace;">24ms [SYNC OK]
+            </div>
+        </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 30px;">
+        <div class="mockup">
+            <h3
+                style="font-size: 0.8rem; font-weight: 800; margin-bottom: 25px; color: var(--muted); letter-spacing: 0.05em;">
+                SEGUIMIENTO CLÍNICO (SUBPROCESO 4)</h3>
+
+            <div style="display: flex; flex-direction: column;">
+                <div
+                    style="display: grid; grid-template-columns: 2fr 1.2fr 1fr 80px 100px; padding: 12px; font-size: 0.65rem; font-weight: 800; color: var(--muted); text-transform: uppercase; border-bottom: 1px solid var(--border);">
+                    <div>Paciente</div>
+                    <div>Diagnóstico</div>
+                    <div>Métrica Reciente</div>
+                    <div style="text-align: center;">Status</div>
+                    <div style="text-align: right;">Acción</div>
+                </div>
+
+                {% for p in pacientes %}
+                <div class="patient-row"
+                    style="display: grid; grid-template-columns: 2fr 1.2fr 1fr 80px 100px; align-items: center; border-radius: 0; background: transparent; border-bottom: 1px solid var(--border); margin-bottom: 0;">
+                    <div style="font-weight: 600; font-size: 0.9rem;">
+                        <a href="{% url 'detalle_paciente' p.id %}"
+                            style="color: var(--white); text-decoration: none; border-bottom: 1px solid transparent; transition: 0.2s;"
+                            onmouseover="this.style.borderColor='var(--teal)'" onmouseout="this.style.borderColor='transparent'">
+                            {{ p.nombre }}
+                        </a>
+                    </div>
+                    <div style="font-size: 0.8rem; color: var(--muted);">{{ p.enfermedad }}</div>
+                    <div style="font-family: monospace; font-size: 0.85rem;">
+                        {% with ultima=p.metricas.last %}
+                        {% if ultima %}{{ ultima.valor }}{% else %}-- --{% endif %}
+                        {% endwith %}
+                    </div>
+                    <div style="display: flex; justify-content: center;">
+                        {% with ultima=p.metricas.last %}
+                        {% if ultima.alerta %}
+                        <div
+                            style="width: 10px; height: 10px; background: var(--alert); border-radius: 50%; box-shadow: 0 0 10px var(--alert);">
+                        </div>
+                        {% else %}
+                        <div
+                            style="width: 10px; height: 10px; background: var(--ok); border-radius: 50%; box-shadow: 0 0 10px var(--ok);">
+                        </div>
+                        {% endif %}
+                        {% endwith %}
+                    </div>
+                    <div style="text-align: right;">
+                        <a href="{% url 'simular' p.id %}"
+                            style="font-size: 0.6rem; font-weight: 800; color: var(--teal); text-decoration: none; border: 1px solid rgba(0, 242, 255, 0.2); padding: 4px 8px; border-radius: 3px; transition: 0.2s;">SIMULAR
+                            S2</a>
+                    </div>
+                </div>
+                {% empty %}
+                <div
+                    style="padding: 60px; text-align: center; color: var(--muted); font-size: 0.8rem; font-weight: 500;">
+                    Base de datos sin registros. Inicie el Subproceso 1 para continuar.
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div>
+            <div class="mockup"
+                style="margin-bottom: 25px; background: linear-gradient(145deg, #0f172a 0%, #060a14 100%);">
+                <h3 style="font-size: 0.8rem; font-weight: 800; margin-bottom: 20px; letter-spacing: 0.05em;">GESTIÓN
+                    (SUBPROCESO 1)</h3>
+                <a href="{% url 'registrar' %}" style="text-decoration: none;">
+                    <button
+                        style="width: 100%; padding: 14px; background: var(--teal); border: none; border-radius: 6px; font-weight: 800; font-size: 0.75rem; color: var(--navy); cursor: pointer; transition: transform 0.2s;">
+                        NUEVO REGISTRO PACIENTE
+                    </button>
+                </a>
+                <a href="{% url 'reporte_general' %}" style="text-decoration: none;">
+                    <button
+                        style="width: 100%; padding: 14px; background: transparent; border: 1px solid var(--border); color: var(--white); border-radius: 6px; font-weight: 700; font-size: 0.75rem; cursor: pointer; margin-top: 12px;">
+                        GENERAR REPORTE CLÍNICO
+                    </button>
+                </a>
+            </div>
+
+            <div class="mockup">
+                <h3
+                    style="font-size: 0.8rem; font-weight: 800; margin-bottom: 15px; color: var(--alert); letter-spacing: 0.05em;">
+                    ALERTAS (SUBPROCESO 3)</h3>
+                <div style="font-size: 0.75rem; color: var(--muted); line-height: 1.6;">
+                    Monitor de seguridad activo. Los eventos críticos del Subproceso 2 se verán reflejados aquí.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

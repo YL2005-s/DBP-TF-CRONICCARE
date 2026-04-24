@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CronicCare — {% block title %}{% endblock %}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --navy: #050a14;
+            --navy2: #0b121f;
+            --teal: #00f2ff;
+            --teal2: #00b8c4;
+            --white: #f8fafc;
+            --muted: #64748b;
+            --alert: #ff4757;
+            --warning: #ffa502;
+            --ok: #2ed573;
+            --card-bg: #0f172a;
+            --border: rgba(255, 255, 255, 0.06);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--navy);
+            color: var(--white);
+            padding-top: 70px;
+            letter-spacing: -0.01em;
+        }
+
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 60px;
+            height: 70px;
+            background: rgba(5, 10, 20, 0.8);
+            backdrop-filter: blur(20px);
+            border-bottom: var(--border);
+        }
+
+        .logo {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: var(--teal);
+            letter-spacing: -0.03em;
+            text-transform: uppercase;
+        }
+
+        .logo span {
+            color: var(--white);
+            font-weight: 400;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 30px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--muted);
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover {
+            color: var(--white);
+        }
+
+        .container {
+            padding: 40px 60px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .mockup {
+            background: var(--card-bg);
+            border-radius: 12px;
+            border: var(--border);
+            padding: 24px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+        }
+
+        .patient-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.02);
+            margin-bottom: 8px;
+            border-radius: 8px;
+            border: 1px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .patient-row:hover {
+            border-color: rgba(0, 242, 255, 0.2);
+            background: rgba(0, 242, 255, 0.03);
+        }
+    </style>
+</head>
+
+<body>
+    <nav>
+        <div class="logo">Cronic<span>Care</span></div>
+        <ul class="nav-links">
+            <li><a href="{% url 'dashboard' %}">DASHBOARD</a></li>
+            <li><a href="{% url 'alertas' %}" style="color: var(--alert); position: relative;">
+                    ALERTAS
+                    <span
+                        style="position: absolute; top: -5px; right: -12px; font-size: 0.6rem; background: var(--alert); color: white; padding: 1px 4px; border-radius: 3px;">!</span>
+                </a></li>
+        </ul>
+    </nav>
+
+    <main>
+        {% block content %}
+        {% endblock %}
+    </main>
+</body>
+
+</html>
