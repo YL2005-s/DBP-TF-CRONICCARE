@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'core/base.html' %}
 
 {% block title %}Historial - {{ paciente.nombre }}{% endblock %}
 
@@ -22,7 +22,7 @@
             </div>
             <div style="margin-bottom: 15px;">
                 <p style="font-size: 0.65rem; color: var(--muted); margin-bottom: 4px;">DIAGNÓSTICO</p>
-                <p style="font-weight: 600; font-size: 0.9rem; color: var(--teal);">{{ paciente.enfermedad }}</p>
+                <p style="font-weight: 600; font-size: 0.9rem; color: var(--teal);">{{ paciente.get_enfermedad_display }}</p>
             </div>
             <div style="margin-bottom: 15px;">
                 <p style="font-size: 0.65rem; color: var(--muted); margin-bottom: 4px;">FECHA DE ALTA</p>
@@ -47,8 +47,8 @@
             <div
                 style="display: grid; grid-template-columns: 1.5fr 1fr 1fr 100px; padding: 14px 12px; font-size: 0.85rem; border-bottom: 1px solid var(--border); align-items: center;">
                 <div style="color: var(--muted); font-family: monospace;">{{ m.fecha|date:"d/m/y H:i" }}</div>
-                <div style="font-weight: 600;">{{ m.tipo }}</div>
-                <div style="font-weight: 700; font-family: monospace;">{{ m.valor }}</div>
+                <div style="font-weight: 600;">{{ m.get_tipo_display }}</div>
+                <div style="font-weight: 700; font-family: monospace;">{{ m.valor|floatformat:0 }}</div>
                 <div style="display: flex; justify-content: flex-end;">
                     {% if m.alerta %}
                     <span

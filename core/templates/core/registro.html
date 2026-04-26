@@ -1,0 +1,97 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Registrar Paciente{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 600px;">
+
+    {% if registro_exitoso %}
+    <div class="mockup" style="margin-bottom: 24px; border-left: 4px solid var(--ok);">
+        <h3 style="font-size: 0.75rem; font-weight: 800; color: var(--ok); text-transform: uppercase; margin-bottom: 16px;">
+            Paciente registrado correctamente
+        </h3>
+        <p style="font-size: 0.8rem; color: var(--muted); margin-bottom: 16px;">
+            Comparte estas credenciales con <strong style="color: var(--white);">{{ paciente.nombre }}</strong>.
+            La contraseña no se podrá recuperar después de cerrar esta página.
+        </p>
+        <div style="background: var(--navy); border: 1px solid var(--border); border-radius: 8px; padding: 20px; font-family: monospace;">
+            <div style="margin-bottom: 10px;">
+                <span style="font-size: 0.65rem; color: var(--muted); font-weight: 700; text-transform: uppercase;">Usuario</span>
+                <p style="font-size: 1rem; font-weight: 700; color: var(--teal); margin-top: 4px;">{{ credenciales.usuario }}</p>
+            </div>
+            <div>
+                <span style="font-size: 0.65rem; color: var(--muted); font-weight: 700; text-transform: uppercase;">Contraseña temporal</span>
+                <p style="font-size: 1rem; font-weight: 700; color: var(--warning); margin-top: 4px;">{{ credenciales.password }}</p>
+            </div>
+        </div>
+        <div style="display: flex; gap: 12px; margin-top: 20px;">
+            <a href="{% url 'dashboard' %}"
+                style="flex: 1; padding: 12px; background: var(--teal); color: var(--navy); border-radius: 6px; font-weight: 800; font-size: 0.75rem; text-decoration: none; text-align: center; text-transform: uppercase;">
+                Volver al Dashboard
+            </a>
+            <a href="{% url 'registrar' %}"
+                style="flex: 1; padding: 12px; background: transparent; border: 1px solid var(--border); color: var(--white); border-radius: 6px; font-weight: 700; font-size: 0.75rem; text-decoration: none; text-align: center; text-transform: uppercase;">
+                Registrar Otro
+            </a>
+        </div>
+    </div>
+
+    {% else %}
+
+    {% if messages %}
+    {% for msg in messages %}
+    <div style="margin-bottom: 16px; padding: 14px 18px; background: rgba(255,71,87,0.1); border: 1px solid rgba(255,71,87,0.3); border-radius: 6px; font-size: 0.8rem; color: var(--alert);">
+        {{ msg }}
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    <div class="mockup">
+        <h2 style="font-weight: 800; font-size: 1.5rem; letter-spacing: -0.04em; margin-bottom: 6px;">REGISTRO CLÍNICO</h2>
+        <p style="font-size: 0.75rem; color: var(--muted); margin-bottom: 30px;">Se creará un usuario de acceso con el DNI como nombre de usuario.</p>
+
+        <form method="POST">
+            {% csrf_token %}
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; font-size: 0.7rem; font-weight: 700; color: var(--muted); margin-bottom: 8px; text-transform: uppercase;">
+                    Nombre del Paciente
+                </label>
+                <input type="text" name="nombre" placeholder="Ej. Juan Pérez" required
+                    style="width: 100%; padding: 12px; background: var(--navy); border: 1px solid var(--border); color: white; border-radius: 6px; font-family: 'Inter'; outline: none;">
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; font-size: 0.7rem; font-weight: 700; color: var(--muted); margin-bottom: 8px; text-transform: uppercase;">
+                    DNI / Identificación
+                </label>
+                <input type="text" name="dni" placeholder="8 dígitos" required maxlength="8"
+                    style="width: 100%; padding: 12px; background: var(--navy); border: 1px solid var(--border); color: white; border-radius: 6px; font-family: 'Inter'; outline: none;">
+                <p style="font-size: 0.65rem; color: var(--muted); margin-top: 6px;">El DNI se usará como nombre de usuario para el acceso del paciente.</p>
+            </div>
+
+            <div style="margin-bottom: 30px;">
+                <label style="display: block; font-size: 0.7rem; font-weight: 700; color: var(--muted); margin-bottom: 8px; text-transform: uppercase;">
+                    Enfermedad Crónica
+                </label>
+                <select name="enfermedad"
+                    style="width: 100%; padding: 12px; background: var(--navy); border: 1px solid var(--border); color: white; border-radius: 6px; font-family: 'Inter'; outline: none;">
+                    <option value="diabetes_t2">Diabetes Tipo 2</option>
+                    <option value="hipertension">Hipertensión Arterial</option>
+                    <option value="asma">Asma</option>
+                </select>
+            </div>
+
+            <button type="submit"
+                style="width: 100%; padding: 14px; background: var(--teal); color: var(--navy); border: none; border-radius: 6px; font-weight: 800; font-size: 0.8rem; cursor: pointer; text-transform: uppercase;">
+                Dar de Alta Paciente
+            </button>
+            <a href="{% url 'dashboard' %}"
+                style="display: block; text-align: center; margin-top: 15px; color: var(--muted); font-size: 0.75rem; text-decoration: none;">
+                Cancelar
+            </a>
+        </form>
+    </div>
+
+    {% endif %}
+</div>
+{% endblock %}

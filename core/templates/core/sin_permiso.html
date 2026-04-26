@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CronicCare — Acceso Denegado</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --navy: #050a14;
+            --teal: #00f2ff;
+            --white: #f8fafc;
+            --muted: #64748b;
+            --alert: #ff4757;
+            --card-bg: #0f172a;
+            --border: rgba(255, 255, 255, 0.06);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--navy);
+            color: var(--white);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            letter-spacing: -0.01em;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            padding: 60px 48px;
+            text-align: center;
+            width: 100%;
+            max-width: 480px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div style="font-size: 3rem; font-weight: 800; color: var(--alert); letter-spacing: -0.04em; margin-bottom: 10px;">
+            403
+        </div>
+
+        <h1 style="font-size: 1.3rem; font-weight: 800; margin-bottom: 16px; letter-spacing: -0.03em;">
+            ACCESO DENEGADO
+        </h1>
+
+        <p style="color: var(--muted); font-size: 0.85rem; line-height: 1.7; margin-bottom: 40px;">
+            No tienes permisos asignados a tu cuenta.<br>
+            Contacta al administrador del sistema.
+        </p>
+
+        <form method="POST" action="{% url 'logout' %}">
+            {% csrf_token %}
+            <button type="submit"
+                style="padding: 12px 32px; background: transparent; border: 1px solid var(--border); color: var(--muted); border-radius: 6px; font-weight: 700; font-size: 0.75rem; text-transform: uppercase; cursor: pointer; font-family: 'Inter', sans-serif; transition: 0.2s;"
+                onmouseover="this.style.color='var(--white)'; this.style.borderColor='rgba(255,255,255,0.2)'"
+                onmouseout="this.style.color='var(--muted)'; this.style.borderColor='var(--border)'">
+                Cerrar Sesión
+            </button>
+        </form>
+    </div>
+</body>
+</html>

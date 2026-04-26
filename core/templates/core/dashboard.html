@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'core/base.html' %}
 
 {% block title %}Dashboard Médico{% endblock %}
 
@@ -69,10 +69,10 @@
                             {{ p.nombre }}
                         </a>
                     </div>
-                    <div style="font-size: 0.8rem; color: var(--muted);">{{ p.enfermedad }}</div>
+                    <div style="font-size: 0.8rem; color: var(--muted);">{{ p.get_enfermedad_display }}</div>
                     <div style="font-family: monospace; font-size: 0.85rem;">
                         {% with ultima=p.metricas.last %}
-                        {% if ultima %}{{ ultima.valor }}{% else %}-- --{% endif %}
+                        {% if ultima %}{{ ultima.valor|floatformat:0 }}{% else %}-- --{% endif %}
                         {% endwith %}
                     </div>
                     <div style="display: flex; justify-content: center;">
