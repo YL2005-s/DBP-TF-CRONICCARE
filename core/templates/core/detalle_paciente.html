@@ -4,67 +4,287 @@
 
 {% block content %}
 <div class="container">
-    <div style="margin-bottom: 30px; display: flex; align-items: center; gap: 15px;">
-        <a href="{% url 'dashboard' %}"
-            style="color: var(--teal); text-decoration: none; font-size: 0.8rem; font-weight: 700;">← VOLVER</a>
-        <h1 style="font-weight: 800; font-size: 1.5rem; letter-spacing: -0.04em;">HISTORIAL: {{ paciente.nombre|upper }}
-        </h1>
+
+  <!-- Header -->
+  <div style="margin-bottom: 28px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+    <a href="{% url 'dashboard' %}" class="btn-outline btn-sm">← Volver</a>
+    <div>
+      <h1 style="font-weight: 800; font-size: 1.5rem; letter-spacing: -0.03em; color: var(--text);">
+        {{ paciente.nombre }}
+      </h1>
+      <div style="margin-top: 6px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+        <span class="badge-primary">{{ paciente.get_enfermedad_display }}</span>
+        {% with ultima=metricas.first %}
+        {% if ultima.alerta %}
+        <span class="badge-alert">Alerta activa</span>
+        {% else %}
+        <span class="badge-ok">Sin alertas</span>
+        {% endif %}
+        {% endwith %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Chart card -->
+  <div class="card" style="margin-bottom: 24px;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+      <div>
+        <h3 style="font-size: 0.95rem; font-weight: 700; color: var(--text);">Evolución de Métricas</h3>
+        <p style="font-size: 0.78rem; color: var(--muted); margin-top: 2px;">{{ periodo_label }} — {{ total_grafica }} registro{{ total_grafica|pluralize:"s" }}</p>
+      </div>
     </div>
 
-    <div style="display: grid; grid-template-columns: 1fr 3fr; gap: 20px;">
-        <div class="mockup">
-            <h3
-                style="font-size: 0.7rem; color: var(--muted); font-weight: 800; text-transform: uppercase; margin-bottom: 15px;">
-                Datos Clínicos</h3>
-            <div style="margin-bottom: 15px;">
-                <p style="font-size: 0.65rem; color: var(--muted); margin-bottom: 4px;">DNI</p>
-                <p style="font-weight: 600; font-size: 0.9rem;">{{ paciente.dni }}</p>
-            </div>
-            <div style="margin-bottom: 15px;">
-                <p style="font-size: 0.65rem; color: var(--muted); margin-bottom: 4px;">DIAGNÓSTICO</p>
-                <p style="font-weight: 600; font-size: 0.9rem; color: var(--teal);">{{ paciente.get_enfermedad_display }}</p>
-            </div>
-            <div style="margin-bottom: 15px;">
-                <p style="font-size: 0.65rem; color: var(--muted); margin-bottom: 4px;">FECHA DE ALTA</p>
-                <p style="font-weight: 600; font-size: 0.9rem;">{{ paciente.fecha_registro|date:"d M Y" }}</p>
-            </div>
-        </div>
-
-        <div class="mockup">
-            <h3
-                style="font-size: 0.7rem; color: var(--muted); font-weight: 800; text-transform: uppercase; margin-bottom: 20px;">
-                Registros de Telemonitoreo (S2)</h3>
-
-            <div
-                style="display: grid; grid-template-columns: 1.5fr 1fr 1fr 100px; padding: 12px; font-size: 0.65rem; font-weight: 800; color: var(--muted); border-bottom: 1px solid var(--border);">
-                <div>FECHA Y HORA</div>
-                <div>TIPO</div>
-                <div>VALOR</div>
-                <div style="text-align: right;">ESTADO</div>
-            </div>
-
-            {% for m in metricas %}
-            <div
-                style="display: grid; grid-template-columns: 1.5fr 1fr 1fr 100px; padding: 14px 12px; font-size: 0.85rem; border-bottom: 1px solid var(--border); align-items: center;">
-                <div style="color: var(--muted); font-family: monospace;">{{ m.fecha|date:"d/m/y H:i" }}</div>
-                <div style="font-weight: 600;">{{ m.get_tipo_display }}</div>
-                <div style="font-weight: 700; font-family: monospace;">{{ m.valor|floatformat:0 }}</div>
-                <div style="display: flex; justify-content: flex-end;">
-                    {% if m.alerta %}
-                    <span
-                        style="font-size: 0.6rem; font-weight: 800; padding: 2px 8px; border-radius: 4px; background: rgba(255, 71, 87, 0.1); color: var(--alert); border: 1px solid rgba(255, 71, 87, 0.2);">ALERTA</span>
-                    {% else %}
-                    <span
-                        style="font-size: 0.6rem; font-weight: 800; padding: 2px 8px; border-radius: 4px; background: rgba(46, 213, 115, 0.1); color: var(--ok); border: 1px solid rgba(46, 213, 115, 0.2);">NORMAL</span>
-                    {% endif %}
-                </div>
-            </div>
-            {% empty %}
-            <div style="padding: 60px; text-align: center; color: var(--muted); font-size: 0.8rem;">
-                No existen mediciones históricas para este paciente.
-            </div>
-            {% endfor %}
-        </div>
+    <div style="display: flex; gap: 8px; margin-bottom: 20px;">
+      <a href="?periodo=10"
+         class="btn-sm {% if periodo == '10' %}btn-primary{% else %}btn-outline{% endif %}"
+         style="text-decoration: none;">Últimas 10</a>
+      <a href="?periodo=semana"
+         class="btn-sm {% if periodo == 'semana' %}btn-primary{% else %}btn-outline{% endif %}"
+         style="text-decoration: none;">Esta semana</a>
+      <a href="?periodo=mes"
+         class="btn-sm {% if periodo == 'mes' %}btn-primary{% else %}btn-outline{% endif %}"
+         style="text-decoration: none;">Este mes</a>
     </div>
+
+    {% if total_grafica == 0 %}
+    <div style="padding: 60px; text-align: center; color: var(--muted); font-size: 0.85rem;">
+      No hay mediciones registradas en este período.
+    </div>
+    {% else %}
+    <canvas id="graficaMetricas" height="90"></canvas>
+    <div style="display: flex; gap: 20px; align-items: center; margin-top: 14px; font-size: 0.78rem; color: var(--muted);">
+      <span style="display: flex; align-items: center; gap: 6px;">
+        <span style="width: 10px; height: 10px; border-radius: 50%; background: #16A34A; display: inline-block;"></span>
+        Valor normal
+      </span>
+      <span style="display: flex; align-items: center; gap: 6px;">
+        <span style="width: 10px; height: 10px; border-radius: 50%; background: #DC2626; display: inline-block;"></span>
+        Valor en alerta
+      </span>
+      <span style="display: flex; align-items: center; gap: 6px;">
+        <span style="width: 20px; height: 2px; background: #DC2626; display: inline-block; border-top: 2px dashed #DC2626;"></span>
+        Umbral clínico
+      </span>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Clinical notes card -->
+  <div class="card" style="margin-bottom: 24px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <h3 style="font-size: 0.95rem; font-weight: 700; color: var(--text);">
+        Notas Clínicas
+        <span style="font-size: 0.82rem; font-weight: 500; color: var(--muted);">({{ notas.count }})</span>
+      </h3>
+    </div>
+
+    {% if messages %}
+      {% for msg in messages %}
+      <div style="margin-bottom: 12px; padding: 10px 14px; background: var(--ok-light); border-radius: 8px; font-size: 0.82rem; color: var(--ok); font-weight: 600;">
+        {{ msg }}
+      </div>
+      {% endfor %}
+    {% endif %}
+
+    <form method="POST" style="margin-bottom: 20px;">
+      {% csrf_token %}
+      <textarea name="nota_texto"
+                placeholder="Escriba una observación clínica..."
+                class="form-input"
+                rows="3"
+                style="resize: vertical; min-height: 80px;"></textarea>
+      <button type="submit" class="btn-primary btn-sm" style="margin-top: 10px;">
+        Agregar Nota
+      </button>
+    </form>
+
+    {% if notas %}
+    <div style="border-top: 1px solid var(--border); padding-top: 4px;">
+      {% for nota in notas %}
+      <div style="padding: 14px 0; border-bottom: 1px solid var(--border);">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+          <span style="font-size: 0.75rem; font-weight: 600; color: var(--primary);">
+            {{ nota.medico.get_full_name|default:nota.medico.username }}
+          </span>
+          <span style="font-size: 0.72rem; color: var(--muted);">
+            {{ nota.fecha|date:"d/m/Y H:i" }}
+          </span>
+        </div>
+        <p style="font-size: 0.88rem; color: var(--text2); line-height: 1.6;">{{ nota.texto }}</p>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p style="font-size: 0.85rem; color: var(--muted); padding-top: 8px;">
+      No hay notas clínicas registradas para este paciente.
+    </p>
+    {% endif %}
+  </div>
+
+  <div style="display: grid; grid-template-columns: 280px 1fr; gap: 24px;">
+
+    <!-- Clinical data card -->
+    <div class="card">
+      <h3 style="font-size: 0.78rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 20px;">Datos Clínicos</h3>
+
+      <div style="margin-bottom: 18px;">
+        <p style="font-size: 0.72rem; color: var(--muted); font-weight: 600; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.03em;">DNI</p>
+        <p style="font-weight: 600; font-size: 0.95rem; color: var(--text);">{{ paciente.dni }}</p>
+      </div>
+
+      <div style="margin-bottom: 18px;">
+        <p style="font-size: 0.72rem; color: var(--muted); font-weight: 600; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.03em;">Diagnóstico</p>
+        <p style="font-weight: 600; font-size: 0.95rem; color: var(--primary);">{{ paciente.get_enfermedad_display }}</p>
+      </div>
+
+      <div style="margin-bottom: 18px;">
+        <p style="font-size: 0.72rem; color: var(--muted); font-weight: 600; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.03em;">Fecha de Alta</p>
+        <p style="font-weight: 600; font-size: 0.95rem; color: var(--text);">{{ paciente.fecha_registro|date:"d M Y" }}</p>
+      </div>
+
+      <div>
+        <p style="font-size: 0.72rem; color: var(--muted); font-weight: 600; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.03em;">Última Medición</p>
+        {% with ultima=metricas.first %}
+        {% if ultima %}
+          <p style="font-weight: 700; font-size: 1.1rem; color: var(--text); margin-bottom: 6px;">{{ ultima.valor|floatformat:1 }}</p>
+          {% if ultima.alerta %}
+          <span class="badge-alert">En alerta</span>
+          {% else %}
+          <span class="badge-ok">Normal</span>
+          {% endif %}
+        {% else %}
+          <p style="font-size: 0.85rem; color: var(--muted);">Sin datos</p>
+        {% endif %}
+        {% endwith %}
+      </div>
+    </div>
+
+    <!-- Metrics table -->
+    <div class="card" style="padding: 0; overflow: hidden;">
+      <div style="padding: 20px 24px; border-bottom: 1px solid var(--border);">
+        <h3 style="font-size: 0.95rem; font-weight: 700; color: var(--text);">Registros de Telemonitoreo</h3>
+        <p style="font-size: 0.78rem; color: var(--muted); margin-top: 2px;">Subproceso 2 — Historial de mediciones</p>
+      </div>
+
+      <div class="table-header" style="grid-template-columns: 1.5fr 1fr 1fr 110px;">
+        <div>Fecha y Hora</div>
+        <div>Tipo</div>
+        <div>Valor</div>
+        <div style="text-align: right;">Estado</div>
+      </div>
+
+      {% for m in metricas %}
+      <div class="table-row" style="grid-template-columns: 1.5fr 1fr 1fr 110px;">
+        <div style="color: var(--muted); font-family: monospace; font-size: 0.82rem;">{{ m.fecha|date:"d/m/y H:i" }}</div>
+        <div style="font-weight: 600;">{{ m.get_tipo_display }}</div>
+        <div style="font-weight: 700; font-family: monospace;">{{ m.valor|floatformat:0 }}</div>
+        <div style="display: flex; justify-content: flex-end;">
+          {% if m.alerta %}
+          <span class="badge-alert">Alerta</span>
+          {% else %}
+          <span class="badge-ok">Normal</span>
+          {% endif %}
+        </div>
+      </div>
+      {% empty %}
+      <div style="padding: 60px 24px; text-align: center; color: var(--muted); font-size: 0.85rem;">
+        No existen mediciones históricas para este paciente.
+      </div>
+      {% endfor %}
+    </div>
+
+  </div>
 </div>
+
+{{ chart_labels|json_script:"chart-labels" }}
+{{ chart_valores|json_script:"chart-valores" }}
+{{ chart_alertas|json_script:"chart-alertas" }}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const labels  = JSON.parse(document.getElementById('chart-labels').textContent);
+  const valores = JSON.parse(document.getElementById('chart-valores').textContent);
+  const alertas = JSON.parse(document.getElementById('chart-alertas').textContent);
+
+  const colores = alertas.map(a => a ? '#DC2626' : '#16A34A');
+
+  const enfermedad = '{{ paciente.enfermedad }}';
+  let umbral = null;
+  let labelUmbral = 'Umbral de alerta';
+  if (enfermedad === 'diabetes_t2')  { umbral = 126; labelUmbral = 'Umbral glucosa (126 mg/dL)'; }
+  if (enfermedad === 'hipertension') { umbral = 140; labelUmbral = 'Umbral presión (140 mmHg)'; }
+  if (enfermedad === 'asma')         { umbral = 90;  labelUmbral = 'Umbral saturación (90%)'; }
+
+  const datasets = [
+    {
+      label: 'Medición',
+      data: valores,
+      type: 'line',
+      borderColor: '#1E40AF',
+      backgroundColor: 'rgba(30, 64, 175, 0.07)',
+      fill: true,
+      tension: 0.4,
+      pointBackgroundColor: colores,
+      pointBorderColor: colores,
+      pointRadius: 6,
+      pointHoverRadius: 8,
+    }
+  ];
+
+  if (umbral !== null && labels.length > 0) {
+    datasets.push({
+      label: labelUmbral,
+      data: Array(labels.length).fill(umbral),
+      type: 'line',
+      borderColor: '#DC2626',
+      borderDash: [6, 4],
+      borderWidth: 1.5,
+      pointRadius: 0,
+      fill: false,
+      tension: 0,
+    });
+  }
+
+  new Chart(document.getElementById('graficaMetricas'), {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          display: true,
+          labels: {
+            font: { family: 'Inter', size: 12 },
+            color: '#64748B',
+            boxWidth: 14,
+            padding: 16,
+            filter: item => item.text !== 'Medición',
+          }
+        },
+        tooltip: {
+          backgroundColor: '#FFFFFF',
+          borderColor: '#E2E8F0',
+          borderWidth: 1,
+          titleColor: '#0F172A',
+          bodyColor: '#334155',
+          titleFont: { family: 'Inter', weight: '600' },
+          bodyFont: { family: 'Inter' },
+          padding: 10,
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: '#F1F5F9' },
+          ticks: { font: { family: 'Inter', size: 11 }, color: '#64748B' }
+        },
+        y: {
+          grid: { color: '#F1F5F9' },
+          ticks: { font: { family: 'Inter', size: 11 }, color: '#64748B' },
+          beginAtZero: false,
+        }
+      }
+    }
+  });
+</script>
 {% endblock %}

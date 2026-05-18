@@ -47,3 +47,24 @@ class Alerta(models.Model):
     criticidad = models.CharField(max_length=20, choices=CRITICIDAD)
     resuelta   = models.BooleanField(default=False)
     fecha      = models.DateTimeField(auto_now_add=True)
+
+
+class NotaClinica(models.Model):
+    paciente = models.ForeignKey(
+        Paciente,
+        on_delete=models.CASCADE,
+        related_name='notas'
+    )
+    medico = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='notas'
+    )
+    texto = models.TextField()
+    fecha = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-fecha']
+
+    def __str__(self):
+        return f"Nota de {self.medico.get_full_name()} para {self.paciente.nombre}"

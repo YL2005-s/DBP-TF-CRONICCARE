@@ -9,5 +9,6 @@ urlpatterns = [
     path('simular/<int:paciente_id>/', views.simular_metrica, name='simular'),
     path('alertas/', views.bandeja_alertas, name='alertas'),
     path('registrar/', views.registrar_paciente, name='registrar'),
+    path('alertas/<int:alerta_id>/resolver/', views.resolver_alerta, name='resolver_alerta'),
     path('sin-permiso/', views.sin_permiso, name='sin_permiso'),
 ]

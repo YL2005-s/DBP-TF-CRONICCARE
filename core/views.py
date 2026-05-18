@@ -1,4 +1,8 @@
+import re
 import secrets
+import random
+from datetime import timedelta
+from django.utils import timezone
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -6,7 +10,7 @@ from django.contrib.auth.models import User, Group
 from django.http import HttpResponse
 from django.template.loader import get_template
 from xhtml2pdf import pisa
-from .models import Paciente, Metrica, Alerta
+from .models import Paciente, Metrica, Alerta, NotaClinica
 
 
 def es_medico(user):
@@ -21,9 +25,17 @@ medico_required = user_passes_test(es_medico, login_url='sin_permiso')
 def dashboard_medico(request):
     pacientes = Paciente.objects.all()
     alertas_criticas = Alerta.objects.filter(resuelta=False, criticidad='critica').count()
+
+    pacientes_seguros = 0
+    for p in pacientes:
+        ultima = p.metricas.last()
+        if ultima and not ultima.alerta:
+            pacientes_seguros += 1
+
     return render(request, 'core/dashboard.html', {
         'pacientes': pacientes,
-        'alertas_count': alertas_criticas
+        'alertas_count': alertas_criticas,
+        'pacientes_seguros': pacientes_seguros,
     })
 
 
@@ -31,10 +43,51 @@ def dashboard_medico(request):
 @medico_required
 def detalle_paciente(request, paciente_id):
     paciente = get_object_or_404(Paciente, id=paciente_id)
+
+    if request.method == 'POST':
+        texto = request.POST.get('nota_texto', '').strip()
+        if texto:
+            NotaClinica.objects.create(
+                paciente=paciente,
+                medico=request.user,
+                texto=texto,
+            )
+            messages.success(request, 'Nota clínica agregada correctamente.')
+        return redirect('detalle_paciente', paciente_id=paciente_id)
+
     metricas = paciente.metricas.all().order_by('-fecha')
+    notas = paciente.notas.select_related('medico').all()
+
+    periodo = request.GET.get('periodo', '10')
+    ahora = timezone.now()
+
+    if periodo == 'semana':
+        desde = ahora - timedelta(days=7)
+        metricas_grafica = paciente.metricas.filter(fecha__gte=desde).order_by('fecha')
+        periodo_label = 'Últimos 7 días'
+    elif periodo == 'mes':
+        desde = ahora - timedelta(days=30)
+        metricas_grafica = paciente.metricas.filter(fecha__gte=desde).order_by('fecha')
+        periodo_label = 'Últimos 30 días'
+    else:
+        periodo = '10'
+        metricas_grafica = paciente.metricas.order_by('fecha')[:10]
+        periodo_label = 'Últimas 10 mediciones'
+
+    labels  = [m.fecha.strftime('%d/%m %H:%M') for m in metricas_grafica]
+    valores = [float(m.valor) for m in metricas_grafica]
+    alertas = [m.alerta for m in metricas_grafica]
+
     return render(request, 'core/detalle_paciente.html', {
         'paciente': paciente,
-        'metricas': metricas
+        'metricas': metricas,
+        'notas': notas,
+        'chart_labels':  labels,
+        'chart_valores': valores,
+        'chart_alertas': alertas,
+        'periodo': periodo,
+        'periodo_label': periodo_label,
+        'total_grafica': len(labels),
     })
 
 
@@ -74,27 +127,51 @@ def reporte_general_pdf(request):
     html = template.render(context)
     pisa_status = pisa.CreatePDF(html, dest=response)
 
+    if pisa_status.err:
+        return HttpResponse('Error al generar el reporte', status=500)
     return response
 
 
 @login_required
 def simular_metrica(request, paciente_id):
-    paciente = Paciente.objects.get(id=paciente_id)
-    valor_simulado = 150.0
-    es_alerta = valor_simulado > 140
+    if request.method != 'POST':
+        return redirect('dashboard')
+    paciente = get_object_or_404(Paciente, id=paciente_id)
+
+    if paciente.enfermedad == 'diabetes_t2':
+        tipo = 'glucosa'
+        valor_simulado = round(random.uniform(80, 200), 1)
+        umbral_alerta = 126
+        es_alerta = valor_simulado > umbral_alerta
+        unidad = 'mg/dL'
+        nombre_metrica = 'Glucosa'
+    elif paciente.enfermedad == 'hipertension':
+        tipo = 'presion'
+        valor_simulado = round(random.uniform(100, 180), 1)
+        umbral_alerta = 140
+        es_alerta = valor_simulado > umbral_alerta
+        unidad = 'mmHg'
+        nombre_metrica = 'Presión arterial'
+    else:  # asma
+        tipo = 'saturacion'
+        valor_simulado = round(random.uniform(85, 100), 1)
+        umbral_alerta = 90
+        es_alerta = valor_simulado < umbral_alerta
+        unidad = '%'
+        nombre_metrica = 'Saturación O2'
 
     metrica = Metrica.objects.create(
         paciente=paciente,
-        tipo='glucosa',
+        tipo=tipo,
         valor=valor_simulado,
-        alerta=es_alerta
+        alerta=es_alerta,
     )
 
     if es_alerta:
         Alerta.objects.create(
             paciente=paciente,
             metrica=metrica,
-            mensaje=f'Glucosa en {valor_simulado:.0f} mg/dL — por encima del umbral (140 mg/dL)',
+            mensaje=f'{nombre_metrica} en {valor_simulado:.1f} {unidad} — fuera del rango seguro (umbral: {umbral_alerta} {unidad})',
             criticidad='critica',
         )
 
@@ -104,8 +181,18 @@ def simular_metrica(request, paciente_id):
 @login_required
 @medico_required
 def bandeja_alertas(request):
-    alertas = Metrica.objects.filter(alerta=True).order_by('-fecha')
+    alertas = Alerta.objects.filter(
+        resuelta=False
+    ).select_related('paciente', 'metrica').order_by('-fecha')
     return render(request, 'core/alertas.html', {'alertas': alertas})
+
+
+@login_required
+@medico_required
+def resolver_alerta(request, alerta_id):
+    if request.method == 'POST':
+        Alerta.objects.filter(pk=alerta_id).update(resuelta=True)
+    return redirect('alertas')
 
 
 @login_required
@@ -115,6 +202,17 @@ def registrar_paciente(request):
         nombre = request.POST.get('nombre')
         dni = request.POST.get('dni')
         enfermedad = request.POST.get('enfermedad')
+
+        if not nombre or not dni:
+            messages.error(request, 'Nombre y DNI son obligatorios.')
+            return render(request, 'core/registro.html')
+        if not re.match(r'^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$', nombre):
+            messages.error(request,
+                'El nombre solo puede contener letras y espacios, sin caracteres especiales.')
+            return render(request, 'core/registro.html')
+        if not dni.isdigit() or len(dni) != 8:
+            messages.error(request, 'El DNI debe contener exactamente 8 dígitos numéricos.')
+            return render(request, 'core/registro.html')
 
         if Paciente.objects.filter(dni=dni).exists():
             messages.error(request, f"El DNI {dni} ya está registrado en el sistema.")

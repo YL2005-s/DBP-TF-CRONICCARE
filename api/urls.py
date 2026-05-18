@@ -5,5 +5,6 @@ router = DefaultRouter()
 router.register('pacientes', views.PacienteViewSet)
 router.register('metricas', views.MetricaViewSet)
 router.register('alertas', views.AlertaViewSet)
+router.register('notas', views.NotaClinicaViewSet)
 
 urlpatterns = router.urls
