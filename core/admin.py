@@ -1,11 +1,14 @@
 from django.contrib import admin
-from .models import Paciente, Metrica, Alerta, NotaClinica, PlanCuidado, LogAcceso
+from .models import Paciente, Metrica, Alerta, NotaClinica, PlanCuidado, LogAcceso, PerfilMedico
 
 admin.site.register(Paciente)
 admin.site.register(Metrica)
 admin.site.register(Alerta)
 admin.site.register(NotaClinica)
 admin.site.register(PlanCuidado)
+
+
+admin.site.register(PerfilMedico)
 
 
 @admin.register(LogAcceso)

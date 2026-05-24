@@ -156,3 +156,30 @@ class LogAcceso(models.Model):
 
     def __str__(self):
         return f"{self.medico} — {self.get_accion_display()} — {self.fecha}"
+
+
+class PerfilMedico(models.Model):
+    ESPECIALIDADES = [
+        ('medicina_general', 'Medicina General'),
+        ('cardiologia',      'Cardiología'),
+        ('endocrinologia',   'Endocrinología'),
+        ('neumologia',       'Neumología'),
+        ('medicina_interna', 'Medicina Interna'),
+        ('otro',             'Otro'),
+    ]
+    user         = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name='perfil_medico'
+    )
+    especialidad = models.CharField(
+        max_length=30,
+        choices=ESPECIALIDADES,
+        default='medicina_general'
+    )
+    cmp      = models.CharField(max_length=20, blank=True, verbose_name='Número CMP')
+    telefono = models.CharField(max_length=15, blank=True)
+    bio      = models.TextField(blank=True, verbose_name='Descripción profesional')
+
+    def __str__(self):
+        return f"Perfil de {self.user.get_full_name()}"
