@@ -22,6 +22,19 @@
         {% endif %}
         {% endwith %}
       </div>
+      {% if estado_paciente == 'critico' %}
+      <div style="background: var(--alert-light); border: 1px solid var(--alert); border-radius: 8px; padding: 10px 16px; margin-top: 12px; font-size: 0.82rem; color: var(--alert); font-weight: 600;">
+        🔴 Estado Crítico — Hay alertas sin resolver en las últimas 24 horas.
+      </div>
+      {% elif estado_paciente == 'riesgo' %}
+      <div style="background: var(--warning-light); border: 1px solid var(--warning); border-radius: 8px; padding: 10px 16px; margin-top: 12px; font-size: 0.82rem; color: var(--warning); font-weight: 600;">
+        🟡 En Observación — Métricas recientes cercanas al umbral clínico.
+      </div>
+      {% else %}
+      <div style="background: var(--ok-light); border: 1px solid var(--ok); border-radius: 8px; padding: 10px 16px; margin-top: 12px; font-size: 0.82rem; color: var(--ok); font-weight: 600;">
+        🟢 Estable — Paciente dentro del rango seguro en las últimas 48 horas.
+      </div>
+      {% endif %}
     </div>
   </div>
 
@@ -285,7 +298,12 @@
         <p style="font-size: 0.72rem; color: var(--muted); font-weight: 600; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.03em;">Última Medición</p>
         {% with ultima=metricas.first %}
         {% if ultima %}
-          <p style="font-weight: 700; font-size: 1.1rem; color: var(--text); margin-bottom: 6px;">{{ ultima.valor|floatformat:1 }}</p>
+          <p style="font-weight: 700; font-size: 1.1rem; color: var(--text); margin-bottom: 6px;">
+            {{ ultima_valor_str }}
+            <span style="font-size: 0.75rem; font-weight: 400; color: var(--muted);">
+              {% if ultima.tipo == 'glucosa' %}mg/dL{% elif ultima.tipo == 'presion' %}mmHg{% elif ultima.tipo == 'saturacion' %}%{% elif ultima.tipo == 'frecuencia' %}lpm{% endif %}
+            </span>
+          </p>
           {% if ultima.alerta %}
           <span class="badge-alert">En alerta</span>
           {% else %}
@@ -312,13 +330,16 @@
         <div style="text-align: right;">Estado</div>
       </div>
 
-      {% for m in metricas %}
+      {% for item in metricas_formateadas %}
       <div class="table-row" style="grid-template-columns: 1.5fr 1fr 1fr 110px;">
-        <div style="color: var(--muted); font-family: monospace; font-size: 0.82rem;">{{ m.fecha|date:"d/m/y H:i" }}</div>
-        <div style="font-weight: 600;">{{ m.get_tipo_display }}</div>
-        <div style="font-weight: 700; font-family: monospace;">{{ m.valor|floatformat:0 }}</div>
+        <div style="color: var(--muted); font-family: monospace; font-size: 0.82rem;">{{ item.fecha_str }}</div>
+        <div style="font-weight: 600;">{{ item.metrica.get_tipo_display }}</div>
+        <div style="font-weight: 700; font-family: monospace;">
+          {{ item.valor_str }}
+          <span style="font-size: 0.75rem; font-weight: 400; color: var(--muted);">{% if item.metrica.tipo == 'glucosa' %}mg/dL{% elif item.metrica.tipo == 'presion' %}mmHg{% elif item.metrica.tipo == 'saturacion' %}%{% elif item.metrica.tipo == 'frecuencia' %}lpm{% endif %}</span>
+        </div>
         <div style="display: flex; justify-content: flex-end;">
-          {% if m.alerta %}
+          {% if item.metrica.alerta %}
           <span class="badge-alert">Alerta</span>
           {% else %}
           <span class="badge-ok">Normal</span>

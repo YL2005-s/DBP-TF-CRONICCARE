@@ -76,6 +76,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'core.context_processors.alertas_pendientes',
             ],
         },
     },
@@ -124,6 +125,8 @@ TIME_ZONE = 'America/Lima'
 USE_I18N = True
 
 USE_L10N = False
+DECIMAL_SEPARATOR = '.'
+USE_THOUSAND_SEPARATOR = False
 
 USE_TZ = True
 

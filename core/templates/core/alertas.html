@@ -20,27 +20,36 @@
       <div style="text-align: right;">Acción</div>
     </div>
 
-    {% for a in alertas %}
+    {% for item in alertas %}
     <div class="table-row" style="grid-template-columns: 1fr 1.5fr 1.2fr 1fr 130px;">
-      <div style="font-family: monospace; font-size: 0.82rem; color: var(--muted);">{{ a.fecha|date:"d/m H:i" }}</div>
+      <div style="font-family: monospace; font-size: 0.82rem; color: var(--muted);">{{ item.fecha_str }}</div>
       <div style="font-weight: 700;">
-        <a href="{% url 'detalle_paciente' a.paciente.id %}"
+        <a href="{% url 'detalle_paciente' item.alerta.paciente.id %}"
            style="color: var(--text); text-decoration: none; transition: color 0.2s;"
            onmouseover="this.style.color='var(--primary)'"
            onmouseout="this.style.color='var(--text)'">
-          {{ a.paciente.nombre }}
+          {{ item.alerta.paciente.nombre }}
         </a>
       </div>
-      <div style="font-family: monospace; font-weight: 600; color: var(--alert);">{{ a.metrica.get_tipo_display }}: {{ a.metrica.valor|floatformat:1 }}</div>
+      <div style="font-family: monospace; font-weight: 600; color: var(--alert);">
+        {% if item.alerta.metrica %}
+          {{ item.alerta.metrica.get_tipo_display }}: {{ item.valor_str }}
+          {% if item.alerta.metrica.tipo == 'glucosa' %}mg/dL
+          {% elif item.alerta.metrica.tipo == 'presion' %}mmHg
+          {% elif item.alerta.metrica.tipo == 'saturacion' %}%
+          {% elif item.alerta.metrica.tipo == 'frecuencia' %}lpm
+          {% endif %}
+        {% else %}—{% endif %}
+      </div>
       <div>
-        {% if a.criticidad == 'critica' %}
-        <span class="badge-alert">{{ a.get_criticidad_display }}</span>
+        {% if item.alerta.criticidad == 'critica' %}
+        <span class="badge-alert">{{ item.alerta.get_criticidad_display }}</span>
         {% else %}
-        <span class="badge-warning">{{ a.get_criticidad_display }}</span>
+        <span class="badge-warning">{{ item.alerta.get_criticidad_display }}</span>
         {% endif %}
       </div>
       <div style="text-align: right;">
-        <form method="POST" action="{% url 'resolver_alerta' a.id %}" style="margin: 0;">
+        <form method="POST" action="{% url 'resolver_alerta' item.alerta.id %}" style="margin: 0;">
           {% csrf_token %}
           <button type="submit" class="btn-outline btn-sm">Marcar resuelta</button>
         </form>

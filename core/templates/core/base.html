@@ -521,7 +521,9 @@
               <path d="M13.73 21a2 2 0 0 1-3.46 0" />
             </svg>
             Alertas
-            <span class="nav-badge">!</span>
+            {% if total_alertas_pendientes > 0 %}
+            <span class="nav-badge">{{ total_alertas_pendientes }}</span>
+            {% endif %}
           </a>
         </li>
 

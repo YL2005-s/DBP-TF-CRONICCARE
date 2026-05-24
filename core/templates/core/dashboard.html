@@ -196,6 +196,12 @@
         </p>
       </div>
 
+      <div style="display: flex; gap: 16px; padding: 10px 20px; font-size: 0.75rem; color: var(--muted); border-bottom: 1px solid var(--border);">
+        <span>🔴 Crítico</span>
+        <span>🟡 En observación</span>
+        <span>🟢 Estable</span>
+      </div>
+
       <div class="table-header" style="grid-template-columns: 2fr 1.2fr 1fr 80px 150px">
         <div>Paciente</div>
         <div>Diagnóstico</div>
@@ -204,38 +210,52 @@
         <div style="text-align: right">Acciones</div>
       </div>
 
-      {% for p in pacientes %}
+      {% for item in pacientes_list %}
       <div class="table-row" style="grid-template-columns: 2fr 1.2fr 1fr 80px 150px">
         <div style="font-weight: 600">
-          <a href="{% url 'detalle_paciente' p.id %}" style="
+          <a href="{% url 'detalle_paciente' item.paciente.id %}" style="
               color: var(--text);
               text-decoration: none;
               transition: color 0.2s;
             " onmouseover="this.style.color='var(--primary)'"
              onmouseout="this.style.color='var(--text)'">
-            {{ p.nombre }}
+            {{ item.paciente.nombre }}
           </a>
         </div>
         <div style="color: var(--muted); font-size: 0.82rem">
-          {{ p.get_enfermedad_display }}
+          {{ item.paciente.get_enfermedad_display }}
         </div>
-        <div style="font-family: monospace; font-weight: 600">
-          {% with ultima=p.metricas.last %}
-          {% if ultima %}{{ ultima.valor|floatformat:1 }}{% else %}—{% endif %}
+        <div>
+          {% with m=item.ultima_metrica %}
+          {% if m %}
+          <span style="font-size: 0.75rem; color: var(--muted); font-weight: 500;">
+            {{ m.get_tipo_display }}
+          </span><br>
+          <span style="font-family: monospace; font-weight: 700;">
+            {{ m.valor|floatformat:1 }}
+            <span style="font-size: 0.7rem; color: var(--muted); font-weight: 400;">
+              {% if m.tipo == 'glucosa' %}mg/dL
+              {% elif m.tipo == 'presion' %}mmHg
+              {% elif m.tipo == 'saturacion' %}%
+              {% elif m.tipo == 'frecuencia' %}lpm
+              {% endif %}
+            </span>
+          </span>
+          {% else %}—{% endif %}
           {% endwith %}
         </div>
         <div style="display: flex; justify-content: center; align-items: center">
-          {% with ultima=p.metricas.last %}
-          {% if ultima.alerta %}
-          <span class="status-dot alert"></span>
+          {% if item.estado == 'critico' %}
+          <span class="status-dot alert" title="Estado crítico — alerta sin resolver"></span>
+          {% elif item.estado == 'riesgo' %}
+          <span class="status-dot warning" title="En observación — métricas límite"></span>
           {% else %}
-          <span class="status-dot ok"></span>
+          <span class="status-dot ok" title="Estable — dentro del rango seguro"></span>
           {% endif %}
-          {% endwith %}
         </div>
         <div style="display: flex; gap: 8px; justify-content: flex-end">
-          <a href="{% url 'detalle_paciente' p.id %}" class="btn-outline btn-sm">Ver detalle</a>
-          <form method="POST" action="{% url 'simular' p.id %}" style="margin: 0;">
+          <a href="{% url 'detalle_paciente' item.paciente.id %}" class="btn-outline btn-sm">Ver detalle</a>
+          <form method="POST" action="{% url 'simular' item.paciente.id %}" style="margin: 0;">
             {% csrf_token %}
             <button type="submit" class="btn-outline btn-sm"
               style="color: var(--muted); border-color: var(--border);">Simular</button>
@@ -276,17 +296,52 @@
       </div>
 
       <div class="card">
-        <h3 style="
-            font-size: 0.9rem;
-            font-weight: 700;
-            color: var(--alert);
-            margin-bottom: 12px;
-          ">
+        <h3 style="font-size: 0.9rem; font-weight: 700; color: var(--alert); margin-bottom: 12px;">
           Alertas pendientes
+          {% if total_alertas_pendientes > 0 %}
+          <span style="font-size: 0.75rem; font-weight: 600; color: var(--muted);">
+            ({{ total_alertas_pendientes }})
+          </span>
+          {% endif %}
         </h3>
-        <p style="font-size: 0.82rem; color: var(--muted); line-height: 1.6">
-          Monitor de seguridad activo. Los eventos críticos se verán reflejados aquí.
-        </p>
+
+        {% if alertas_recientes %}
+          {% for item in alertas_recientes %}
+          <div style="padding: 10px 0; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 4px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 0.82rem; font-weight: 700; color: var(--text);">
+                {{ item.alerta.paciente.nombre }}
+              </span>
+              <span class="badge-alert" style="font-size: 0.65rem;">
+                {{ item.alerta.get_criticidad_display }}
+              </span>
+            </div>
+            <div style="font-size: 0.75rem; color: var(--muted);">
+              {{ item.alerta.fecha|date:"d/m H:i" }}
+            </div>
+            {% if item.alerta.metrica %}
+            <div style="font-size: 0.75rem; color: var(--alert); font-weight: 600;">
+              {{ item.alerta.metrica.get_tipo_display }}:
+              {{ item.valor_str }}
+              {% if item.alerta.metrica.tipo == 'glucosa' %}mg/dL
+              {% elif item.alerta.metrica.tipo == 'presion' %}mmHg
+              {% elif item.alerta.metrica.tipo == 'saturacion' %}%
+              {% elif item.alerta.metrica.tipo == 'frecuencia' %}lpm
+              {% endif %}
+            </div>
+            {% endif %}
+          </div>
+          {% endfor %}
+
+          <a href="{% url 'alertas' %}"
+             style="display: block; text-align: center; margin-top: 12px; font-size: 0.78rem; color: var(--primary); font-weight: 600; text-decoration: none;">
+            Ver todas las alertas →
+          </a>
+        {% else %}
+          <p style="font-size: 0.82rem; color: var(--muted); line-height: 1.6">
+            No hay alertas críticas pendientes.
+          </p>
+        {% endif %}
       </div>
     </div>
   </div>

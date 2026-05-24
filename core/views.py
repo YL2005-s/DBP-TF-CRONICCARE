@@ -20,6 +20,33 @@ def es_medico(user):
 medico_required = user_passes_test(es_medico, login_url='sin_permiso')
 
 
+def calcular_estado_paciente(paciente):
+    ahora = timezone.now()
+    ultimas_24h = ahora - timedelta(hours=24)
+    ultimas_48h = ahora - timedelta(hours=48)
+
+    alerta_critica = Alerta.objects.filter(
+        paciente=paciente,
+        resuelta=False,
+        criticidad='critica',
+        fecha__gte=ultimas_24h,
+    ).exists()
+
+    if alerta_critica:
+        return 'critico'
+
+    metricas_alerta = Metrica.objects.filter(
+        paciente=paciente,
+        alerta=True,
+        fecha__gte=ultimas_48h,
+    ).count()
+
+    if metricas_alerta >= 2:
+        return 'riesgo'
+
+    return 'estable'
+
+
 def registrar_log(request, accion, paciente=None, descripcion=''):
     ip = request.META.get('HTTP_X_FORWARDED_FOR')
     if ip:
@@ -41,14 +68,20 @@ def dashboard_medico(request):
     pacientes = Paciente.objects.all()
     alertas_criticas = Alerta.objects.filter(resuelta=False, criticidad='critica').count()
 
-    pacientes_seguros = 0
+    pacientes_list = []
     for p in pacientes:
-        ultima = p.metricas.last()
-        if ultima and not ultima.alerta:
-            pacientes_seguros += 1
+        estado = calcular_estado_paciente(p)
+        pacientes_list.append({
+            'paciente': p,
+            'estado': estado,
+            'ultima_metrica': p.metricas.last(),
+        })
+
+    pacientes_seguros = sum(1 for item in pacientes_list if item['estado'] == 'estable')
 
     return render(request, 'core/dashboard.html', {
         'pacientes': pacientes,
+        'pacientes_list': pacientes_list,
         'alertas_count': alertas_criticas,
         'pacientes_seguros': pacientes_seguros,
     })
@@ -143,9 +176,21 @@ def detalle_paciente(request, paciente_id):
         descripcion=f"Accedió a la ficha de {paciente.nombre}",
     )
 
+    estado_paciente = calcular_estado_paciente(paciente)
     metricas = paciente.metricas.all().order_by('-fecha')
     notas    = paciente.notas.select_related('medico').all()
     planes   = paciente.planes.filter(activo=True)
+
+    ultima_metrica   = metricas.first()
+    ultima_valor_str = f"{float(ultima_metrica.valor):.1f}" if ultima_metrica else None
+
+    metricas_formateadas = []
+    for m in metricas:
+        metricas_formateadas.append({
+            'metrica': m,
+            'valor_str': f"{float(m.valor):.1f}",
+            'fecha_str': m.fecha.strftime('%d/%m/%y %H:%M'),
+        })
 
     periodo = request.GET.get('periodo', '10')
     ahora = timezone.now()
@@ -169,7 +214,10 @@ def detalle_paciente(request, paciente_id):
 
     return render(request, 'core/detalle_paciente.html', {
         'paciente': paciente,
+        'estado_paciente': estado_paciente,
         'metricas': metricas,
+        'metricas_formateadas': metricas_formateadas,
+        'ultima_valor_str': ultima_valor_str,
         'notas': notas,
         'planes': planes,
         'chart_labels':  labels,
@@ -290,10 +338,20 @@ def simular_metrica(request, paciente_id):
 @login_required
 @medico_required
 def bandeja_alertas(request):
-    alertas = Alerta.objects.filter(
+    alertas_raw = Alerta.objects.filter(
         resuelta=False
     ).select_related('paciente', 'metrica').order_by('-fecha')
-    return render(request, 'core/alertas.html', {'alertas': alertas})
+
+    alertas_formateadas = []
+    for a in alertas_raw:
+        valor_str = f"{float(a.metrica.valor):.1f}" if a.metrica else None
+        alertas_formateadas.append({
+            'alerta': a,
+            'valor_str': valor_str,
+            'fecha_str': a.fecha.strftime('%d/%m %H:%M'),
+        })
+
+    return render(request, 'core/alertas.html', {'alertas': alertas_formateadas})
 
 
 @login_required
