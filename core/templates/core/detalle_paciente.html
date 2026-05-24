@@ -78,16 +78,9 @@
       </h3>
     </div>
 
-    {% if messages %}
-      {% for msg in messages %}
-      <div style="margin-bottom: 12px; padding: 10px 14px; background: var(--ok-light); border-radius: 8px; font-size: 0.82rem; color: var(--ok); font-weight: 600;">
-        {{ msg }}
-      </div>
-      {% endfor %}
-    {% endif %}
-
     <form method="POST" style="margin-bottom: 20px;">
       {% csrf_token %}
+      <input type="hidden" name="accion" value="agregar_nota">
       <textarea name="nota_texto"
                 placeholder="Escriba una observación clínica..."
                 class="form-input"
@@ -117,6 +110,152 @@
     {% else %}
     <p style="font-size: 0.85rem; color: var(--muted); padding-top: 8px;">
       No hay notas clínicas registradas para este paciente.
+    </p>
+    {% endif %}
+  </div>
+
+  <!-- Care plan card -->
+  <div class="card" style="margin-bottom: 24px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <div>
+        <h3 style="font-size: 0.95rem; font-weight: 700; color: var(--text);">Plan de Cuidados</h3>
+        <p style="font-size: 0.78rem; color: var(--muted); margin-top: 2px;">
+          Medicamentos y recordatorios activos — {{ planes.count }} ítem{{ planes.count|pluralize:"s" }}
+        </p>
+      </div>
+    </div>
+
+    {% if messages %}
+      {% for msg in messages %}
+      <div style="margin-bottom: 12px; padding: 10px 14px; background: var(--ok-light); border-radius: 8px; font-size: 0.82rem; color: var(--ok); font-weight: 600;">
+        {{ msg }}
+      </div>
+      {% endfor %}
+    {% endif %}
+
+    <!-- Add plan form -->
+    <form method="POST" style="margin-bottom: 20px;">
+      {% csrf_token %}
+      <input type="hidden" name="accion" value="agregar_plan">
+
+      <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 12px; margin-bottom: 12px;">
+        <div>
+          <label class="form-label">Tipo</label>
+          <select name="plan_tipo" class="form-input" id="plan_tipo_select">
+            <option value="medicamento">Medicamento</option>
+            <option value="metrica">Toma de Métrica</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Descripción</label>
+          <input type="text" name="plan_descripcion" class="form-input" required
+                 placeholder="Ej: Metformina 500mg — después del desayuno">
+        </div>
+      </div>
+
+      <div id="campo_tipo_metrica" style="margin-bottom: 12px; display: none;">
+        <label class="form-label">Métrica a registrar</label>
+        <select name="plan_tipo_metrica" class="form-input">
+          <option value="glucosa">Glucosa</option>
+          <option value="presion">Presión Arterial</option>
+          <option value="saturacion">Saturación de Oxígeno</option>
+          <option value="frecuencia">Frecuencia Cardíaca</option>
+        </select>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+        <div>
+          <label class="form-label">Hora del recordatorio</label>
+          <input type="time" name="plan_hora" class="form-input" required>
+        </div>
+        <div>
+          <label class="form-label">Frecuencia</label>
+          <select name="plan_frecuencia" class="form-input">
+            <option value="diario">Diario</option>
+            <option value="semanal">Semanal</option>
+            <option value="mensual">Mensual</option>
+          </select>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-primary btn-sm">+ Agregar al Plan</button>
+    </form>
+
+    <script>
+      const planTipoSelect    = document.getElementById('plan_tipo_select');
+      const campoTipoMetrica  = document.getElementById('campo_tipo_metrica');
+      const tipoMetricaSelect = campoTipoMetrica.querySelector('select');
+      const descInput         = document.querySelector('input[name="plan_descripcion"]');
+
+      function syncDescripcion() {
+        const opcionTexto = tipoMetricaSelect.options[tipoMetricaSelect.selectedIndex].text;
+        descInput.value = 'Toma de ' + opcionTexto;
+      }
+
+      planTipoSelect.addEventListener('change', function() {
+        const esMetrica = this.value === 'metrica';
+        campoTipoMetrica.style.display = esMetrica ? 'block' : 'none';
+        if (esMetrica) {
+          syncDescripcion();
+          descInput.readOnly = true;
+          descInput.style.opacity = '0.6';
+          descInput.style.cursor  = 'not-allowed';
+        } else {
+          descInput.readOnly = false;
+          descInput.style.opacity = '';
+          descInput.style.cursor  = '';
+          descInput.value = '';
+        }
+      });
+
+      tipoMetricaSelect.addEventListener('change', syncDescripcion);
+    </script>
+
+    <!-- Plan items list -->
+    {% if planes %}
+    <div style="border-top: 1px solid var(--border); padding-top: 4px;">
+      {% for plan in planes %}
+      <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border);">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          {% if plan.tipo == 'medicamento' %}
+          <span style="padding: 2px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 700; background: #DBEAFE; color: #1E40AF;">
+            Medicamento
+          </span>
+          {% else %}
+          <span style="padding: 2px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 700; background: #DCFCE7; color: #16A34A;">
+            Métrica
+          </span>
+          {% endif %}
+          <div>
+            <p style="font-size: 0.88rem; font-weight: 600; color: var(--text); margin: 0;">{{ plan.descripcion }}</p>
+            {% if plan.tipo == 'metrica' and plan.tipo_metrica %}
+            <span style="font-size: 0.72rem; font-weight: 600; padding: 1px 8px; border-radius: 20px; background: #F0FDF4; color: #15803D;">
+              {{ plan.get_tipo_metrica_display }}
+            </span>
+            {% endif %}
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="text-align: right;">
+            <p style="font-size: 0.88rem; font-weight: 700; font-family: monospace; color: var(--text); margin: 0;">{{ plan.hora|time:"H:i" }}</p>
+            <p style="font-size: 0.72rem; color: var(--muted); margin: 0;">{{ plan.get_frecuencia_display }}</p>
+          </div>
+          <form method="POST" style="margin: 0;">
+            {% csrf_token %}
+            <input type="hidden" name="accion" value="desactivar_plan">
+            <input type="hidden" name="plan_id" value="{{ plan.id }}">
+            <button type="submit"
+                    style="font-size: 0.72rem; font-weight: 600; color: #DC2626; background: none; border: 1px solid #FCA5A5; border-radius: 6px; padding: 4px 10px; cursor: pointer;">
+              Eliminar
+            </button>
+          </form>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p style="font-size: 0.85rem; color: var(--muted); padding-top: 8px;">
+      No hay ítems en el plan de cuidados. Agregue medicamentos o recordatorios de métricas.
     </p>
     {% endif %}
   </div>

@@ -1,7 +1,7 @@
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated, BasePermission
-from core.models import Paciente, Metrica, Alerta, NotaClinica
-from .serializers import PacienteSerializer, MetricaSerializer, AlertaSerializer, NotaClinicaSerializer
+from core.models import Paciente, Metrica, Alerta, NotaClinica, PlanCuidado
+from .serializers import PacienteSerializer, MetricaSerializer, AlertaSerializer, NotaClinicaSerializer, PlanCuidadoSerializer
 
 
 class EsMedico(BasePermission):
@@ -37,3 +37,21 @@ class NotaClinicaViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(medico=self.request.user)
+
+
+class PlanCuidadoViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class   = PlanCuidadoSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.groups.filter(name='Medico').exists():
+            return PlanCuidado.objects.filter(activo=True)
+        try:
+            paciente = user.paciente
+            return PlanCuidado.objects.filter(
+                paciente=paciente,
+                activo=True
+            )
+        except Exception:
+            return PlanCuidado.objects.none()

@@ -10,7 +10,7 @@ from django.contrib.auth.models import User, Group
 from django.http import HttpResponse
 from django.template.loader import get_template
 from xhtml2pdf import pisa
-from .models import Paciente, Metrica, Alerta, NotaClinica
+from .models import Paciente, Metrica, Alerta, NotaClinica, PlanCuidado, LogAcceso
 
 
 def es_medico(user):
@@ -18,6 +18,21 @@ def es_medico(user):
 
 
 medico_required = user_passes_test(es_medico, login_url='sin_permiso')
+
+
+def registrar_log(request, accion, paciente=None, descripcion=''):
+    ip = request.META.get('HTTP_X_FORWARDED_FOR')
+    if ip:
+        ip = ip.split(',')[0].strip()
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+    LogAcceso.objects.create(
+        medico=request.user,
+        paciente=paciente,
+        accion=accion,
+        descripcion=descripcion,
+        ip=ip,
+    )
 
 
 @login_required
@@ -45,18 +60,92 @@ def detalle_paciente(request, paciente_id):
     paciente = get_object_or_404(Paciente, id=paciente_id)
 
     if request.method == 'POST':
-        texto = request.POST.get('nota_texto', '').strip()
-        if texto:
-            NotaClinica.objects.create(
+        accion = request.POST.get('accion')
+
+        if accion == 'agregar_nota':
+            texto = request.POST.get('nota_texto', '').strip()
+            if texto:
+                NotaClinica.objects.create(
+                    paciente=paciente,
+                    medico=request.user,
+                    texto=texto,
+                )
+                registrar_log(
+                    request,
+                    accion='agregar_nota',
+                    paciente=paciente,
+                    descripcion=f"Nota: {texto[:50]}...",
+                )
+                messages.success(request, 'Nota clínica agregada correctamente.')
+
+        elif accion == 'agregar_plan':
+            tipo         = request.POST.get('plan_tipo')
+            tipo_metrica = request.POST.get('plan_tipo_metrica') or None
+            descripcion  = request.POST.get('plan_descripcion', '').strip()
+            hora         = request.POST.get('plan_hora')
+            frecuencia   = request.POST.get('plan_frecuencia', 'diario')
+
+            if descripcion and hora:
+                PlanCuidado.objects.create(
+                    paciente=paciente,
+                    tipo=tipo,
+                    tipo_metrica=tipo_metrica if tipo == 'metrica' else None,
+                    descripcion=descripcion,
+                    hora=hora,
+                    frecuencia=frecuencia,
+                    creado_por=request.user,
+                )
+                registrar_log(
+                    request,
+                    accion='agregar_plan',
+                    paciente=paciente,
+                    descripcion=f"Plan: {descripcion}",
+                )
+                messages.success(request, 'Ítem agregado al plan de cuidados.')
+
+        elif accion == 'desactivar_plan':
+            plan_id = request.POST.get('plan_id')
+            PlanCuidado.objects.filter(
+                pk=plan_id,
+                paciente=paciente
+            ).update(activo=False)
+            registrar_log(
+                request,
+                accion='eliminar_plan',
                 paciente=paciente,
-                medico=request.user,
-                texto=texto,
+                descripcion=f"Plan eliminado ID: {plan_id}",
             )
-            messages.success(request, 'Nota clínica agregada correctamente.')
+            messages.success(request, 'Ítem eliminado del plan.')
+
+        else:
+            # compatibilidad: form de notas sin campo accion
+            texto = request.POST.get('nota_texto', '').strip()
+            if texto:
+                NotaClinica.objects.create(
+                    paciente=paciente,
+                    medico=request.user,
+                    texto=texto,
+                )
+                registrar_log(
+                    request,
+                    accion='agregar_nota',
+                    paciente=paciente,
+                    descripcion=f"Nota: {texto[:50]}...",
+                )
+                messages.success(request, 'Nota clínica agregada correctamente.')
+
         return redirect('detalle_paciente', paciente_id=paciente_id)
 
+    registrar_log(
+        request,
+        accion='ver_paciente',
+        paciente=paciente,
+        descripcion=f"Accedió a la ficha de {paciente.nombre}",
+    )
+
     metricas = paciente.metricas.all().order_by('-fecha')
-    notas = paciente.notas.select_related('medico').all()
+    notas    = paciente.notas.select_related('medico').all()
+    planes   = paciente.planes.filter(activo=True)
 
     periodo = request.GET.get('periodo', '10')
     ahora = timezone.now()
@@ -82,6 +171,7 @@ def detalle_paciente(request, paciente_id):
         'paciente': paciente,
         'metricas': metricas,
         'notas': notas,
+        'planes': planes,
         'chart_labels':  labels,
         'chart_valores': valores,
         'chart_alertas': alertas,
@@ -96,6 +186,13 @@ def detalle_paciente(request, paciente_id):
 def exportar_pdf_paciente(request, paciente_id):
     paciente = get_object_or_404(Paciente, id=paciente_id)
     metricas = paciente.metricas.all().order_by('-fecha')
+
+    registrar_log(
+        request,
+        accion='generar_pdf',
+        paciente=paciente,
+        descripcion=f"PDF individual generado para {paciente.nombre}",
+    )
 
     template_path = 'core/reportes/reporte_pdf.html'
     context = {'paciente': paciente, 'metricas': metricas}
@@ -116,6 +213,11 @@ def exportar_pdf_paciente(request, paciente_id):
 @login_required
 @medico_required
 def reporte_general_pdf(request):
+    registrar_log(
+        request,
+        accion='generar_pdf',
+        descripcion="Reporte general PDF generado",
+    )
     pacientes = Paciente.objects.all()
     template_path = 'core/reportes/reporte_general_pdf.html'
     context = {'pacientes': pacientes}
@@ -175,6 +277,13 @@ def simular_metrica(request, paciente_id):
             criticidad='critica',
         )
 
+    registrar_log(
+        request,
+        accion='simular_metrica',
+        paciente=paciente,
+        descripcion=f"Métrica simulada: {tipo} = {valor_simulado}",
+    )
+
     return redirect('dashboard')
 
 
@@ -191,7 +300,15 @@ def bandeja_alertas(request):
 @medico_required
 def resolver_alerta(request, alerta_id):
     if request.method == 'POST':
-        Alerta.objects.filter(pk=alerta_id).update(resuelta=True)
+        alerta = get_object_or_404(Alerta, pk=alerta_id)
+        alerta.resuelta = True
+        alerta.save()
+        registrar_log(
+            request,
+            accion='marcar_alerta',
+            paciente=alerta.paciente,
+            descripcion=f"Alerta ID {alerta_id} marcada como resuelta",
+        )
     return redirect('alertas')
 
 
@@ -235,6 +352,13 @@ def registrar_paciente(request):
             enfermedad=enfermedad,
         )
 
+        registrar_log(
+            request,
+            accion='registrar_paciente',
+            paciente=paciente,
+            descripcion=f"Paciente {nombre} registrado con DNI {dni}",
+        )
+
         return render(request, 'core/registro.html', {
             'registro_exitoso': True,
             'credenciales': {'usuario': dni, 'password': password_temp},
@@ -247,3 +371,10 @@ def registrar_paciente(request):
 @login_required
 def sin_permiso(request):
     return render(request, 'core/sin_permiso.html')
+
+
+@login_required
+@medico_required
+def auditoria(request):
+    logs = LogAcceso.objects.select_related('medico', 'paciente').all()[:100]
+    return render(request, 'core/auditoria.html', {'logs': logs})

@@ -68,3 +68,91 @@ class NotaClinica(models.Model):
 
     def __str__(self):
         return f"Nota de {self.medico.get_full_name()} para {self.paciente.nombre}"
+
+
+class PlanCuidado(models.Model):
+    TIPOS = [
+        ('medicamento', 'Medicamento'),
+        ('metrica',     'Toma de Métrica'),
+    ]
+    TIPOS_METRICA = [
+        ('glucosa',    'Glucosa'),
+        ('presion',    'Presión Arterial'),
+        ('saturacion', 'Saturación de Oxígeno'),
+        ('frecuencia', 'Frecuencia Cardíaca'),
+    ]
+    FRECUENCIAS = [
+        ('diario',   'Diario'),
+        ('semanal',  'Semanal'),
+        ('mensual',  'Mensual'),
+    ]
+    paciente     = models.ForeignKey(
+        Paciente,
+        on_delete=models.CASCADE,
+        related_name='planes'
+    )
+    tipo         = models.CharField(max_length=20, choices=TIPOS)
+    tipo_metrica = models.CharField(
+        max_length=20,
+        choices=TIPOS_METRICA,
+        blank=True,
+        null=True
+    )
+    descripcion  = models.CharField(max_length=255)
+    hora         = models.TimeField()
+    frecuencia   = models.CharField(
+        max_length=10,
+        choices=FRECUENCIAS,
+        default='diario'
+    )
+    activo       = models.BooleanField(default=True)
+    fecha_inicio = models.DateField(auto_now_add=True)
+    creado_por   = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='planes_creados'
+    )
+
+    class Meta:
+        ordering = ['hora']
+
+    def __str__(self):
+        return f"{self.get_tipo_display()} — {self.descripcion} ({self.hora})"
+
+
+class LogAcceso(models.Model):
+    ACCIONES = [
+        ('ver_paciente',       'Ver ficha de paciente'),
+        ('ver_metricas',       'Ver métricas'),
+        ('agregar_nota',       'Agregar nota clínica'),
+        ('agregar_plan',       'Agregar plan de cuidados'),
+        ('eliminar_plan',      'Eliminar plan de cuidados'),
+        ('marcar_alerta',      'Marcar alerta como resuelta'),
+        ('generar_pdf',        'Generar reporte PDF'),
+        ('registrar_paciente', 'Registrar paciente'),
+        ('simular_metrica',    'Simular métrica'),
+    ]
+    medico = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='logs'
+    )
+    paciente = models.ForeignKey(
+        Paciente,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='logs'
+    )
+    accion      = models.CharField(max_length=30, choices=ACCIONES)
+    descripcion = models.TextField(blank=True)
+    ip          = models.GenericIPAddressField(null=True, blank=True)
+    fecha       = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-fecha']
+
+    def __str__(self):
+        return f"{self.medico} — {self.get_accion_display()} — {self.fecha}"

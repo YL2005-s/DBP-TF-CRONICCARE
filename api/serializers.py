@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from core.models import Paciente, Metrica, Alerta, NotaClinica
+from core.models import Paciente, Metrica, Alerta, NotaClinica, PlanCuidado
 
 
 class MetricaSerializer(serializers.ModelSerializer):
@@ -33,3 +33,21 @@ class NotaClinicaSerializer(serializers.ModelSerializer):
     class Meta:
         model = NotaClinica
         fields = ['id', 'paciente', 'medico_nombre', 'texto', 'fecha']
+
+
+class PlanCuidadoSerializer(serializers.ModelSerializer):
+    tipo_display         = serializers.CharField(
+        source='get_tipo_display', read_only=True)
+    tipo_metrica_display = serializers.CharField(
+        source='get_tipo_metrica_display', read_only=True)
+    frecuencia_display   = serializers.CharField(
+        source='get_frecuencia_display', read_only=True)
+
+    class Meta:
+        model  = PlanCuidado
+        fields = [
+            'id', 'paciente', 'tipo', 'tipo_display',
+            'tipo_metrica', 'tipo_metrica_display',
+            'descripcion', 'hora', 'frecuencia',
+            'frecuencia_display', 'activo', 'fecha_inicio'
+        ]
