@@ -20,8 +20,9 @@
       <div style="text-align: right;">Acción</div>
     </div>
 
+    <div id="tabla-alertas">
     {% for item in alertas %}
-    <div class="table-row" style="grid-template-columns: 1fr 1.5fr 1.2fr 1fr 130px;">
+    <div id="alerta-{{ item.alerta.id }}" class="table-row" style="grid-template-columns: 1fr 1.5fr 1.2fr 1fr 130px;">
       <div style="font-family: monospace; font-size: 0.82rem; color: var(--muted);">{{ item.fecha_str }}</div>
       <div style="font-weight: 700;">
         <a href="{% url 'detalle_paciente' item.alerta.paciente.id %}"
@@ -49,10 +50,10 @@
         {% endif %}
       </div>
       <div style="text-align: right;">
-        <form method="POST" action="{% url 'resolver_alerta' item.alerta.id %}" style="margin: 0;">
-          {% csrf_token %}
-          <button type="submit" class="btn-outline btn-sm">Marcar resuelta</button>
-        </form>
+        <button type="button" class="btn-outline btn-sm"
+                onclick="resolverAlerta({{ item.alerta.id }})">
+          Marcar resuelta
+        </button>
       </div>
     </div>
     {% empty %}
@@ -66,7 +67,73 @@
       <p style="font-size: 0.82rem; margin-top: 4px;">No hay alertas críticas sin atender en este momento.</p>
     </div>
     {% endfor %}
+    </div>
 
   </div>
 </div>
+
+<script>
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+    const cookies = document.cookie.split(';');
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      if (cookie.startsWith(name + '=')) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
+
+function resolverAlerta(id) {
+  const fila = document.getElementById('alerta-' + id);
+  if (!fila) return;
+
+  fila.style.transition = 'all 0.4s ease';
+  fila.style.opacity = '0.5';
+  fila.style.pointerEvents = 'none';
+
+  fetch(`/alertas/${id}/resolver/`, {
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': getCookie('csrftoken'),
+      'Content-Type': 'application/json',
+    }
+  })
+  .then(response => {
+    if (response.ok || response.redirected) {
+      fila.style.opacity = '0';
+      fila.style.maxHeight = fila.offsetHeight + 'px';
+      fila.style.overflow = 'hidden';
+
+      setTimeout(() => {
+        fila.style.maxHeight = '0';
+        fila.style.padding = '0';
+        fila.style.margin = '0';
+      }, 400);
+
+      setTimeout(() => {
+        fila.remove();
+        const tabla = document.getElementById('tabla-alertas');
+        if (tabla && tabla.querySelectorAll('.table-row').length === 0) {
+          tabla.innerHTML = `
+            <div style="padding: 60px 24px; text-align: center; color: var(--muted); font-size: 0.85rem;">
+              🛡️ No hay alertas críticas pendientes.
+            </div>`;
+        }
+      }, 800);
+    } else {
+      fila.style.opacity = '1';
+      fila.style.pointerEvents = 'auto';
+    }
+  })
+  .catch(() => {
+    fila.style.opacity = '1';
+    fila.style.pointerEvents = 'auto';
+  });
+}
+</script>
 {% endblock %}

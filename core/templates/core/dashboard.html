@@ -138,7 +138,7 @@
           ">
           Alertas Críticas
         </div>
-        <div style="font-size: 2rem; font-weight: 800; color: var(--alert)">
+        <div id="contador-critico" style="font-size: 2rem; font-weight: 800; color: var(--alert)">
           {{ alertas_count }}
         </div>
       </div>
@@ -346,4 +346,45 @@
     </div>
   </div>
 </div>
+
+<style>
+@keyframes parpadear {
+  0%   { opacity: 1; transform: scale(1); }
+  25%  { opacity: 0.3; transform: scale(1.2); }
+  50%  { opacity: 1; transform: scale(1); }
+  75%  { opacity: 0.3; transform: scale(1.1); }
+  100% { opacity: 1; transform: scale(1); }
+}
+.parpadear {
+  animation: parpadear 1s ease 3;
+}
+</style>
+
+<script>
+let conteoAnterior = {{ alertas_count }};
+
+function actualizarConteoAlertas() {
+  fetch('{% url "conteo_alertas_json" %}')
+    .then(res => res.json())
+    .then(data => {
+      const nuevoConteo = data.criticas;
+      const el = document.getElementById('contador-critico');
+
+      if (el && nuevoConteo !== conteoAnterior) {
+        el.textContent = nuevoConteo;
+
+        if (nuevoConteo > conteoAnterior) {
+          el.classList.remove('parpadear');
+          void el.offsetWidth;
+          el.classList.add('parpadear');
+        }
+
+        conteoAnterior = nuevoConteo;
+      }
+    })
+    .catch(() => {});
+}
+
+setInterval(actualizarConteoAlertas, 10000);
+</script>
 {% endblock %}

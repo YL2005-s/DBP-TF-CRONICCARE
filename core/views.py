@@ -7,7 +7,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User, Group
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.template.loader import get_template
 from xhtml2pdf import pisa
 from .models import Paciente, Metrica, Alerta, NotaClinica, PlanCuidado, LogAcceso, PerfilMedico
@@ -205,7 +205,7 @@ def detalle_paciente(request, paciente_id):
         periodo_label = 'Últimos 30 días'
     else:
         periodo = '10'
-        metricas_grafica = paciente.metricas.order_by('fecha')[:10]
+        metricas_grafica = list(paciente.metricas.order_by('-fecha')[:10])[::-1]
         periodo_label = 'Últimas 10 mediciones'
 
     labels  = [m.fecha.strftime('%d/%m %H:%M') for m in metricas_grafica]
@@ -367,7 +367,16 @@ def resolver_alerta(request, alerta_id):
             paciente=alerta.paciente,
             descripcion=f"Alerta ID {alerta_id} marcada como resuelta",
         )
+        if request.headers.get('Content-Type') == 'application/json':
+            return JsonResponse({'ok': True})
     return redirect('alertas')
+
+
+@login_required
+@medico_required
+def conteo_alertas_json(request):
+    total = Alerta.objects.filter(resuelta=False, criticidad='critica').count()
+    return JsonResponse({'criticas': total})
 
 
 @login_required
