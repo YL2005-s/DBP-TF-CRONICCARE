@@ -1,0 +1,528 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Historial - {{ paciente.nombre }}{% endblock %}
+
+{% block content %}
+<style>
+  .tabs-nav {
+    display: flex;
+    gap: 4px;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 20px;
+  }
+  .tab-btn {
+    padding: 10px 20px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    transition: all 0.2s;
+    border-radius: 6px 6px 0 0;
+  }
+  .tab-btn:hover {
+    color: var(--primary);
+    background: var(--primary-light);
+  }
+  .tab-btn.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+    background: var(--primary-light);
+  }
+  .tab-content {
+    display: none;
+  }
+  .tab-content.active {
+    display: block;
+  }
+</style>
+
+<div class="container">
+
+  <!-- Header -->
+  <div style="margin-bottom: 28px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+    <a href="{% url 'dashboard' %}" class="btn-outline btn-sm">← Volver</a>
+    <div>
+      <h1 style="font-weight: 800; font-size: 1.5rem; letter-spacing: -0.03em; color: var(--text);">
+        {{ paciente.nombre }}
+      </h1>
+      <div style="margin-top: 6px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+        <span class="badge-primary">{{ paciente.get_enfermedad_display }}</span>
+        {% with ultima=metricas.first %}
+        {% if ultima.alerta %}
+        <span class="badge-alert">Alerta activa</span>
+        {% else %}
+        <span class="badge-ok">Sin alertas</span>
+        {% endif %}
+        {% endwith %}
+      </div>
+      {% if estado_paciente == 'critico' %}
+      <div style="background: var(--alert-light); border: 1px solid var(--alert); border-radius: 8px; padding: 10px 16px; margin-top: 12px; font-size: 0.82rem; color: var(--alert); font-weight: 600;">
+        🔴 Estado Crítico — Hay alertas sin resolver en las últimas 24 horas.
+      </div>
+      {% elif estado_paciente == 'riesgo' %}
+      <div style="background: var(--warning-light); border: 1px solid var(--warning); border-radius: 8px; padding: 10px 16px; margin-top: 12px; font-size: 0.82rem; color: var(--warning); font-weight: 600;">
+        🟡 En Observación — Métricas recientes cercanas al umbral clínico.
+      </div>
+      {% else %}
+      <div style="background: var(--ok-light); border: 1px solid var(--ok); border-radius: 8px; padding: 10px 16px; margin-top: 12px; font-size: 0.82rem; color: var(--ok); font-weight: 600;">
+        🟢 Estable — Paciente dentro del rango seguro en las últimas 48 horas.
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Messages (always visible, outside tabs) -->
+  {% if messages %}
+  <div style="margin-bottom: 16px;">
+    {% for msg in messages %}
+    <div style="padding: 12px 16px; background: var(--ok-light); border: 1px solid var(--ok); border-radius: 8px; font-size: 0.82rem; color: var(--ok); font-weight: 600; margin-bottom: 8px;">
+      ✅ {{ msg }}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Main layout: sidebar left + tabs right -->
+  <div style="display: grid; grid-template-columns: 280px 1fr; gap: 24px; align-items: start;">
+
+    <!-- Left column: Clinical data (always visible) -->
+    <div class="card">
+      <h3 style="font-size: 0.78rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 20px;">Datos Clínicos</h3>
+
+      <div style="margin-bottom: 18px;">
+        <p style="font-size: 0.72rem; color: var(--muted); font-weight: 600; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.03em;">DNI</p>
+        <p style="font-weight: 600; font-size: 0.95rem; color: var(--text);">{{ paciente.dni }}</p>
+      </div>
+
+      <div style="margin-bottom: 18px;">
+        <p style="font-size: 0.72rem; color: var(--muted); font-weight: 600; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.03em;">Diagnóstico</p>
+        <p style="font-weight: 600; font-size: 0.95rem; color: var(--primary);">{{ paciente.get_enfermedad_display }}</p>
+      </div>
+
+      <div style="margin-bottom: 18px;">
+        <p style="font-size: 0.72rem; color: var(--muted); font-weight: 600; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.03em;">Fecha de Alta</p>
+        <p style="font-weight: 600; font-size: 0.95rem; color: var(--text);">{{ paciente.fecha_registro|date:"d M Y" }}</p>
+      </div>
+
+      <div>
+        <p style="font-size: 0.72rem; color: var(--muted); font-weight: 600; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.03em;">Última Medición</p>
+        {% with ultima=metricas.first %}
+        {% if ultima %}
+          <p style="font-weight: 700; font-size: 1.1rem; color: var(--text); margin-bottom: 6px;">
+            {{ ultima_valor_str }}
+            <span style="font-size: 0.75rem; font-weight: 400; color: var(--muted);">
+              {% if ultima.tipo == 'glucosa' %}mg/dL{% elif ultima.tipo == 'presion' %}mmHg{% elif ultima.tipo == 'saturacion' %}%{% elif ultima.tipo == 'frecuencia' %}lpm{% endif %}
+            </span>
+          </p>
+          {% if ultima.alerta %}
+          <span class="badge-alert">En alerta</span>
+          {% else %}
+          <span class="badge-ok">Normal</span>
+          {% endif %}
+        {% else %}
+          <p style="font-size: 0.85rem; color: var(--muted);">Sin datos</p>
+        {% endif %}
+        {% endwith %}
+      </div>
+    </div>
+
+    <!-- Right column: Tabs -->
+    <div>
+
+      <!-- Tab navigation -->
+      <div class="tabs-nav">
+        <button class="tab-btn active" data-tab="metricas">📈 Métricas</button>
+        <button class="tab-btn" data-tab="notas">📝 Notas clínicas</button>
+        <button class="tab-btn" data-tab="plan">💊 Plan de cuidados</button>
+        <button class="tab-btn" data-tab="historial">📋 Historial</button>
+      </div>
+
+      <!-- Tab 1: Métricas -->
+      <div class="tab-content active" id="tab-metricas">
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+            <div>
+              <h3 style="font-size: 0.95rem; font-weight: 700; color: var(--text);">Evolución de Métricas</h3>
+              <p style="font-size: 0.78rem; color: var(--muted); margin-top: 2px;">{{ periodo_label }} — {{ total_grafica }} registro{{ total_grafica|pluralize:"s" }}</p>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 8px; margin-bottom: 20px;">
+            <a href="?periodo=10"
+               class="btn-sm {% if periodo == '10' %}btn-primary{% else %}btn-outline{% endif %}"
+               style="text-decoration: none;">Últimas 10</a>
+            <a href="?periodo=semana"
+               class="btn-sm {% if periodo == 'semana' %}btn-primary{% else %}btn-outline{% endif %}"
+               style="text-decoration: none;">Esta semana</a>
+            <a href="?periodo=mes"
+               class="btn-sm {% if periodo == 'mes' %}btn-primary{% else %}btn-outline{% endif %}"
+               style="text-decoration: none;">Este mes</a>
+          </div>
+
+          {% if total_grafica == 0 %}
+          <div style="padding: 60px; text-align: center; color: var(--muted); font-size: 0.85rem;">
+            No hay mediciones registradas en este período.
+          </div>
+          {% else %}
+          <canvas id="graficaMetricas" height="90"></canvas>
+          <div style="display: flex; gap: 20px; align-items: center; margin-top: 14px; font-size: 0.78rem; color: var(--muted);">
+            <span style="display: flex; align-items: center; gap: 6px;">
+              <span style="width: 10px; height: 10px; border-radius: 50%; background: #16A34A; display: inline-block;"></span>
+              Valor normal
+            </span>
+            <span style="display: flex; align-items: center; gap: 6px;">
+              <span style="width: 10px; height: 10px; border-radius: 50%; background: #DC2626; display: inline-block;"></span>
+              Valor en alerta
+            </span>
+            <span style="display: flex; align-items: center; gap: 6px;">
+              <span style="width: 20px; height: 2px; background: #DC2626; display: inline-block; border-top: 2px dashed #DC2626;"></span>
+              Umbral clínico
+            </span>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Tab 2: Notas clínicas -->
+      <div class="tab-content" id="tab-notas">
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3 style="font-size: 0.95rem; font-weight: 700; color: var(--text);">
+              Notas Clínicas
+              <span style="font-size: 0.82rem; font-weight: 500; color: var(--muted);">({{ notas.count }})</span>
+            </h3>
+          </div>
+
+          <form method="POST" style="margin-bottom: 20px;">
+            {% csrf_token %}
+            <input type="hidden" name="accion" value="agregar_nota">
+            <textarea name="nota_texto"
+                      placeholder="Escriba una observación clínica..."
+                      class="form-input"
+                      rows="3"
+                      style="resize: vertical; min-height: 80px;"></textarea>
+            <button type="submit" class="btn-primary btn-sm" style="margin-top: 10px;">
+              Agregar Nota
+            </button>
+          </form>
+
+          {% if notas %}
+          <div style="border-top: 1px solid var(--border); padding-top: 4px;">
+            {% for nota in notas %}
+            <div style="padding: 14px 0; border-bottom: 1px solid var(--border);">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                <span style="font-size: 0.75rem; font-weight: 600; color: var(--primary);">
+                  {{ nota.medico.get_full_name|default:nota.medico.username }}
+                </span>
+                <span style="font-size: 0.72rem; color: var(--muted);">
+                  {{ nota.fecha|date:"d/m/Y H:i" }}
+                </span>
+              </div>
+              <p style="font-size: 0.88rem; color: var(--text2); line-height: 1.6;">{{ nota.texto }}</p>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <p style="font-size: 0.85rem; color: var(--muted); padding-top: 8px;">
+            No hay notas clínicas registradas para este paciente.
+          </p>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Tab 3: Plan de cuidados -->
+      <div class="tab-content" id="tab-plan">
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div>
+              <h3 style="font-size: 0.95rem; font-weight: 700; color: var(--text);">Plan de Cuidados</h3>
+              <p style="font-size: 0.78rem; color: var(--muted); margin-top: 2px;">
+                Medicamentos y recordatorios activos — {{ planes.count }} ítem{{ planes.count|pluralize:"s" }}
+              </p>
+            </div>
+          </div>
+
+          <!-- Add plan form -->
+          <form method="POST" style="margin-bottom: 20px;">
+            {% csrf_token %}
+            <input type="hidden" name="accion" value="agregar_plan">
+
+            <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 12px; margin-bottom: 12px;">
+              <div>
+                <label class="form-label">Tipo</label>
+                <select name="plan_tipo" class="form-input" id="plan_tipo_select">
+                  <option value="medicamento">Medicamento</option>
+                  <option value="metrica">Toma de Métrica</option>
+                </select>
+              </div>
+              <div>
+                <label class="form-label">Descripción</label>
+                <input type="text" name="plan_descripcion" class="form-input" required
+                       placeholder="Ej: Metformina 500mg — después del desayuno">
+              </div>
+            </div>
+
+            <div id="campo_tipo_metrica" style="margin-bottom: 12px; display: none;">
+              <label class="form-label">Métrica a registrar</label>
+              <select name="plan_tipo_metrica" class="form-input">
+                <option value="glucosa">Glucosa</option>
+                <option value="presion">Presión Arterial</option>
+                <option value="saturacion">Saturación de Oxígeno</option>
+                <option value="frecuencia">Frecuencia Cardíaca</option>
+              </select>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+              <div>
+                <label class="form-label">Hora del recordatorio</label>
+                <input type="time" name="plan_hora" class="form-input" required>
+              </div>
+              <div>
+                <label class="form-label">Frecuencia</label>
+                <select name="plan_frecuencia" class="form-input">
+                  <option value="diario">Diario</option>
+                  <option value="semanal">Semanal</option>
+                  <option value="mensual">Mensual</option>
+                </select>
+              </div>
+            </div>
+
+            <button type="submit" class="btn-primary btn-sm">+ Agregar al Plan</button>
+          </form>
+
+          <!-- Plan items list -->
+          {% if planes %}
+          <div style="border-top: 1px solid var(--border); padding-top: 4px;">
+            {% for plan in planes %}
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border);">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                {% if plan.tipo == 'medicamento' %}
+                <span style="padding: 2px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 700; background: #DBEAFE; color: #1E40AF;">
+                  Medicamento
+                </span>
+                {% else %}
+                <span style="padding: 2px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 700; background: #DCFCE7; color: #16A34A;">
+                  Métrica
+                </span>
+                {% endif %}
+                <div>
+                  <p style="font-size: 0.88rem; font-weight: 600; color: var(--text); margin: 0;">{{ plan.descripcion }}</p>
+                  {% if plan.tipo == 'metrica' and plan.tipo_metrica %}
+                  <span style="font-size: 0.72rem; font-weight: 600; padding: 1px 8px; border-radius: 20px; background: #F0FDF4; color: #15803D;">
+                    {{ plan.get_tipo_metrica_display }}
+                  </span>
+                  {% endif %}
+                </div>
+              </div>
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="text-align: right;">
+                  <p style="font-size: 0.88rem; font-weight: 700; font-family: monospace; color: var(--text); margin: 0;">{{ plan.hora|time:"H:i" }}</p>
+                  <p style="font-size: 0.72rem; color: var(--muted); margin: 0;">{{ plan.get_frecuencia_display }}</p>
+                </div>
+                <form method="POST" style="margin: 0;">
+                  {% csrf_token %}
+                  <input type="hidden" name="accion" value="desactivar_plan">
+                  <input type="hidden" name="plan_id" value="{{ plan.id }}">
+                  <button type="submit"
+                          style="font-size: 0.72rem; font-weight: 600; color: #DC2626; background: none; border: 1px solid #FCA5A5; border-radius: 6px; padding: 4px 10px; cursor: pointer;">
+                    Eliminar
+                  </button>
+                </form>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <p style="font-size: 0.85rem; color: var(--muted); padding-top: 8px;">
+            No hay ítems en el plan de cuidados. Agregue medicamentos o recordatorios de métricas.
+          </p>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Tab 4: Historial -->
+      <div class="tab-content" id="tab-historial">
+        <div class="card" style="padding: 0; overflow: hidden;">
+          <div style="padding: 20px 24px; border-bottom: 1px solid var(--border);">
+            <h3 style="font-size: 0.95rem; font-weight: 700; color: var(--text);">Registros de Telemonitoreo</h3>
+            <p style="font-size: 0.78rem; color: var(--muted); margin-top: 2px;">Historial de mediciones</p>
+          </div>
+
+          <div class="table-header" style="grid-template-columns: 1.5fr 1fr 1fr 110px;">
+            <div>Fecha y Hora</div>
+            <div>Tipo</div>
+            <div>Valor</div>
+            <div style="text-align: right;">Estado</div>
+          </div>
+
+          {% for item in metricas_formateadas %}
+          <div class="table-row" style="grid-template-columns: 1.5fr 1fr 1fr 110px;">
+            <div style="color: var(--muted); font-family: monospace; font-size: 0.82rem;">{{ item.fecha_str }}</div>
+            <div style="font-weight: 600;">{{ item.metrica.get_tipo_display }}</div>
+            <div style="font-weight: 700; font-family: monospace;">
+              {{ item.valor_str }}
+              <span style="font-size: 0.75rem; font-weight: 400; color: var(--muted);">{% if item.metrica.tipo == 'glucosa' %}mg/dL{% elif item.metrica.tipo == 'presion' %}mmHg{% elif item.metrica.tipo == 'saturacion' %}%{% elif item.metrica.tipo == 'frecuencia' %}lpm{% endif %}</span>
+            </div>
+            <div style="display: flex; justify-content: flex-end;">
+              {% if item.metrica.alerta %}
+              <span class="badge-alert">Alerta</span>
+              {% else %}
+              <span class="badge-ok">Normal</span>
+              {% endif %}
+            </div>
+          </div>
+          {% empty %}
+          <div style="padding: 60px 24px; text-align: center; color: var(--muted); font-size: 0.85rem;">
+            No existen mediciones históricas para este paciente.
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+{{ chart_labels|json_script:"chart-labels" }}
+{{ chart_valores|json_script:"chart-valores" }}
+{{ chart_alertas|json_script:"chart-alertas" }}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const labels  = JSON.parse(document.getElementById('chart-labels').textContent);
+  const valores = JSON.parse(document.getElementById('chart-valores').textContent);
+  const alertas = JSON.parse(document.getElementById('chart-alertas').textContent);
+
+  const colores = alertas.map(a => a ? '#DC2626' : '#16A34A');
+
+  const enfermedad = '{{ paciente.enfermedad }}';
+  let umbral = null;
+  let labelUmbral = 'Umbral de alerta';
+  if (enfermedad === 'diabetes_t2')  { umbral = 126; labelUmbral = 'Umbral glucosa (126 mg/dL)'; }
+  if (enfermedad === 'hipertension') { umbral = 140; labelUmbral = 'Umbral presión (140 mmHg)'; }
+  if (enfermedad === 'asma')         { umbral = 90;  labelUmbral = 'Umbral saturación (90%)'; }
+
+  const datasets = [
+    {
+      label: 'Medición',
+      data: valores,
+      type: 'line',
+      borderColor: '#1E40AF',
+      backgroundColor: 'rgba(30, 64, 175, 0.07)',
+      fill: true,
+      tension: 0.4,
+      pointBackgroundColor: colores,
+      pointBorderColor: colores,
+      pointRadius: 6,
+      pointHoverRadius: 8,
+    }
+  ];
+
+  if (umbral !== null && labels.length > 0) {
+    datasets.push({
+      label: labelUmbral,
+      data: Array(labels.length).fill(umbral),
+      type: 'line',
+      borderColor: '#DC2626',
+      borderDash: [6, 4],
+      borderWidth: 1.5,
+      pointRadius: 0,
+      fill: false,
+      tension: 0,
+    });
+  }
+
+  new Chart(document.getElementById('graficaMetricas'), {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          display: true,
+          labels: {
+            font: { family: 'Inter', size: 12 },
+            color: '#64748B',
+            boxWidth: 14,
+            padding: 16,
+            filter: item => item.text !== 'Medición',
+          }
+        },
+        tooltip: {
+          backgroundColor: '#FFFFFF',
+          borderColor: '#E2E8F0',
+          borderWidth: 1,
+          titleColor: '#0F172A',
+          bodyColor: '#334155',
+          titleFont: { family: 'Inter', weight: '600' },
+          bodyFont: { family: 'Inter' },
+          padding: 10,
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: '#F1F5F9' },
+          ticks: { font: { family: 'Inter', size: 11 }, color: '#64748B' }
+        },
+        y: {
+          grid: { color: '#F1F5F9' },
+          ticks: { font: { family: 'Inter', size: 11 }, color: '#64748B' },
+          beginAtZero: false,
+        }
+      }
+    }
+  });
+</script>
+
+<script>
+  const planTipoSelect    = document.getElementById('plan_tipo_select');
+  const campoTipoMetrica  = document.getElementById('campo_tipo_metrica');
+  const tipoMetricaSelect = campoTipoMetrica.querySelector('select');
+  const descInput         = document.querySelector('input[name="plan_descripcion"]');
+
+  function syncDescripcion() {
+    const opcionTexto = tipoMetricaSelect.options[tipoMetricaSelect.selectedIndex].text;
+    descInput.value = 'Toma de ' + opcionTexto;
+  }
+
+  planTipoSelect.addEventListener('change', function() {
+    const esMetrica = this.value === 'metrica';
+    campoTipoMetrica.style.display = esMetrica ? 'block' : 'none';
+    if (esMetrica) {
+      syncDescripcion();
+      descInput.readOnly = true;
+      descInput.style.opacity = '0.6';
+      descInput.style.cursor  = 'not-allowed';
+    } else {
+      descInput.readOnly = false;
+      descInput.style.opacity = '';
+      descInput.style.cursor  = '';
+      descInput.value = '';
+    }
+  });
+
+  tipoMetricaSelect.addEventListener('change', syncDescripcion);
+
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      this.classList.add('active');
+      document.getElementById('tab-' + this.dataset.tab).classList.add('active');
+      sessionStorage.setItem('tab_activa_paciente', this.dataset.tab);
+    });
+  });
+
+  const tabGuardada = sessionStorage.getItem('tab_activa_paciente');
+  if (tabGuardada) {
+    const btn = document.querySelector(`.tab-btn[data-tab="${tabGuardada}"]`);
+    if (btn) btn.click();
+  }
+</script>
+{% endblock %}

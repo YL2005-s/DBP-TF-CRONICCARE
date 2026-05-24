@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        @page {
+            size: letter;
+            margin: 2cm;
+        }
+
+        body {
+            font-family: Helvetica, Arial, sans-serif;
+            color: #1a202c;
+            line-height: 1.4;
+        }
+
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #00c9b1;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        .title {
+            font-size: 22px;
+            font-weight: bold;
+            color: #0f172a;
+            margin: 0;
+        }
+
+        .subtitle {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 5px;
+        }
+
+        .summary-box {
+            background-color: #f8fafc;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background-color: #0f172a;
+            color: white;
+            font-size: 10px;
+            padding: 10px;
+            text-align: left;
+            text-transform: uppercase;
+        }
+
+        td {
+            font-size: 10px;
+            padding: 10px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .status-ok {
+            color: #2ed573;
+            font-weight: bold;
+        }
+
+        .status-alert {
+            color: #ff4757;
+            font-weight: bold;
+        }
+
+        .footer {
+            margin-top: 30px;
+            font-size: 9px;
+            color: #94a3b8;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <p class="title">CRONICCARE - REPORTE DE RED</p>
+        <p class="subtitle">Consolidado de Telemonitoreo de Pacientes Crónicos</p>
+    </div>
+
+    <div class="summary-box">
+        <p style="font-size: 12px; margin: 0;"><strong>Fecha de emisión:</strong> {% now "d/m/Y H:i" %}</p>
+        <p style="font-size: 12px; margin: 5px 0 0 0;"><strong>Total Pacientes en Red:</strong> {{ pacientes.count }}
+        </p>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Paciente</th>
+                <th>DNI</th>
+                <th>Diagnóstico</th>
+                <th>Última Lectura</th>
+                <th>Estado</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in pacientes %}
+            <tr>
+                <td><strong>{{ p.nombre|upper }}</strong></td>
+                <td>{{ p.dni }}</td>
+                <td>{{ p.enfermedad }}</td>
+                <td>
+                    {% with ultima=p.metricas.last %}
+                    {% if ultima %}{{ ultima.valor }}{% else %}N/A{% endif %}
+                    {% endwith %}
+                </td>
+                <td>
+                    {% with ultima=p.metricas.last %}
+                    {% if ultima.alerta %}
+                    <span class="status-alert">ALERTA</span>
+                    {% else %}
+                    <span class="status-ok">ESTABLE</span>
+                    {% endif %}
+                    {% endwith %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="footer">
+        <p>Este documento es un reporte generado automáticamente por el sistema CronicCare.</p>
+        <p>Página 1 de 1</p>
+    </div>
+</body>
+
+</html>
