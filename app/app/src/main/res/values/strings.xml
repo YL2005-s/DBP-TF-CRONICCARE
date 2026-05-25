@@ -1,3 +1,64 @@
 <resources>
     <string name="app_name">CronicCare</string>
+    <string name="app_tagline">Tu salud, bajo control</string>
+
+    <!-- Login -->
+    <string name="login_title">Iniciar sesión</string>
+    <string name="login_subtitle">Accede a tu cuenta de paciente</string>
+    <string name="hint_dni">DNI del paciente</string>
+    <string name="hint_password">Contraseña</string>
+    <string name="btn_login">Ingresar</string>
+    <string name="login_loading">Verificando…</string>
+    <string name="error_dni_empty">Ingresa tu DNI</string>
+    <string name="error_password_empty">Ingresa tu contraseña</string>
+    <string name="error_login_failed">DNI o contraseña incorrectos</string>
+    <string name="error_network">Sin conexión. Verifica tu red.</string>
+
+    <!-- Dashboard -->
+    <string name="nav_dashboard">Inicio</string>
+    <string name="nav_registrar">Registrar</string>
+    <string name="nav_historial">Historial</string>
+    <string name="nav_plan">Mi Plan</string>
+    <string name="dashboard_greeting">Hola,</string>
+    <string name="dashboard_status_label">Estado actual</string>
+    <string name="dashboard_metricas_recientes">Mediciones recientes</string>
+    <string name="dashboard_plan_hoy">Plan de hoy</string>
+    <string name="status_estable">Estable</string>
+    <string name="status_riesgo">En riesgo</string>
+    <string name="status_critico">Crítico</string>
+    <string name="ver_todo">Ver todo</string>
+    <string name="sin_datos">Sin datos aún</string>
+    <string name="cerrar_sesion">Cerrar sesión</string>
+
+    <!-- Registrar Métrica -->
+    <string name="registrar_title">Nueva medición</string>
+    <string name="registrar_subtitle">Selecciona el tipo y el valor</string>
+    <string name="label_tipo_metrica">Tipo de medición</string>
+    <string name="label_valor">Valor</string>
+    <string name="btn_registrar">Guardar medición</string>
+    <string name="registrar_exito">¡Medición registrada!</string>
+    <string name="registrar_alerta">¡Atención! Valor fuera del rango seguro.</string>
+    <string name="error_valor_vacio">Ingresa el valor medido</string>
+    <string name="error_valor_invalido">El valor no es válido</string>
+
+    <!-- Tipos de métrica -->
+    <string name="tipo_glucosa">Glucosa</string>
+    <string name="tipo_presion">Presión arterial</string>
+    <string name="tipo_saturacion">Saturación O₂</string>
+    <string name="tipo_frecuencia">Frecuencia cardíaca</string>
+
+    <!-- Historial -->
+    <string name="historial_title">Historial</string>
+    <string name="historial_empty">No hay mediciones registradas</string>
+    <string name="alerta_label">Alerta</string>
+    <string name="normal_label">Normal</string>
+
+    <!-- Plan de cuidado -->
+    <string name="plan_title">Mi plan de cuidado</string>
+    <string name="plan_empty">No tienes un plan asignado aún</string>
+    <string name="frecuencia_diario">Diario</string>
+    <string name="frecuencia_semanal">Semanal</string>
+    <string name="frecuencia_mensual">Mensual</string>
+    <string name="tipo_medicamento">Medicamento</string>
+    <string name="tipo_metrica_plan">Medición</string>
 </resources>
