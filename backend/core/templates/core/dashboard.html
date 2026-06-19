@@ -1,7 +1,6 @@
 {% extends 'core/base.html' %} {% block title %}Dashboard Médico{% endblock %}
 {% block content %}
 <div class="container">
-  <!-- Header -->
   <header style="
       margin-bottom: 36px;
       display: flex;
@@ -26,7 +25,6 @@
     </div>
   </header>
 
-  <!-- Metric cards -->
   <div style="
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -361,7 +359,7 @@
 </style>
 
 <script>
-let conteoAnterior = {{ alertas_count }};
+let conteoAnterior = Number("{{ alertas_count|default:0 }}");
 
 function actualizarConteoAlertas() {
   fetch('{% url "conteo_alertas_json" %}')

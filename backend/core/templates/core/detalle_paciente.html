@@ -46,6 +46,8 @@
   <!-- Header -->
   <div style="margin-bottom: 28px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
     <a href="{% url 'dashboard' %}" class="btn-outline btn-sm">← Volver</a>
+    <a href="{% url 'ficha_medica' paciente.id %}" class="btn-outline btn-sm"
+       style="border-color: var(--primary); color: var(--primary);">Ficha Médica</a>
     <div>
       <h1 style="font-weight: 800; font-size: 1.5rem; letter-spacing: -0.03em; color: var(--text);">
         {{ paciente.nombre }}

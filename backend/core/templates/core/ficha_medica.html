@@ -1,0 +1,399 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Ficha Médica — {{ paciente.nombre }}{% endblock %}
+
+{% block content %}
+<style>
+  .fm-header { display: flex; align-items: center; gap: 16px; margin-bottom: 28px; }
+  .fm-avatar {
+    width: 52px; height: 52px; border-radius: 12px;
+    background: var(--primary-light); display: flex; align-items: center;
+    justify-content: center; font-size: 1.4rem; font-weight: 800;
+    color: var(--primary); flex-shrink: 0;
+  }
+  .section-title {
+    font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.06em; color: var(--muted); margin-bottom: 18px;
+    padding-bottom: 10px; border-bottom: 1px solid var(--border);
+  }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .imc-pill {
+    display: inline-block; padding: 3px 10px; border-radius: 20px;
+    font-size: 0.78rem; font-weight: 700;
+  }
+  .presc-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 0; border-bottom: 1px solid var(--border);
+  }
+  .presc-row:last-child { border-bottom: none; }
+  .badge-via {
+    font-size: 0.68rem; font-weight: 600; padding: 2px 8px;
+    border-radius: 20px; background: var(--primary-light); color: var(--primary);
+  }
+  .umbral-row {
+    display: grid; grid-template-columns: 1fr 120px 120px;
+    gap: 10px; align-items: center; margin-bottom: 10px;
+  }
+  .umbral-label { font-size: 0.82rem; font-weight: 500; color: var(--text2); }
+  .tab-nav {
+    display: flex; gap: 4px; margin-bottom: 24px;
+    border-bottom: 2px solid var(--border); padding-bottom: 0;
+  }
+  .tab-btn {
+    padding: 8px 16px; font-size: 0.8rem; font-weight: 600;
+    color: var(--muted); background: none; border: none; cursor: pointer;
+    border-bottom: 2px solid transparent; margin-bottom: -2px;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+  .empty-state {
+    text-align: center; padding: 28px 0; color: var(--muted);
+    font-size: 0.82rem;
+  }
+  .imc-bajo    { background: #dbeafe; color: #1e40af; }
+  .imc-normal  { background: var(--ok-light); color: var(--ok); }
+  .imc-sobre   { background: var(--warning-light); color: var(--warning); }
+  .imc-obeso   { background: var(--alert-light); color: var(--alert); }
+  .msg-ok      { background: var(--ok-light); color: var(--ok); border: 1px solid #86efac; }
+  .msg-error   { background: var(--alert-light); color: var(--alert); border: 1px solid #fca5a5; }
+</style>
+
+<div class="container" style="max-width: 860px;">
+
+  {% if messages %}
+    {% for msg in messages %}
+    {% if 'correctamente' in msg|lower or 'agregad' in msg|lower or 'guardad' in msg|lower %}
+    <div class="msg-ok" style="margin-bottom: 16px; padding: 11px 16px; border-radius: 8px; font-size: 0.82rem; font-weight: 600;">{{ msg }}</div>
+    {% else %}
+    <div class="msg-error" style="margin-bottom: 16px; padding: 11px 16px; border-radius: 8px; font-size: 0.82rem; font-weight: 600;">{{ msg }}</div>
+    {% endif %}
+    {% endfor %}
+  {% endif %}
+
+  <!-- Header -->
+  <div class="fm-header">
+    <div class="fm-avatar">{{ paciente.nombre|slice:":1"|upper }}</div>
+    <div>
+      <h2 style="font-size: 1.3rem; font-weight: 800; letter-spacing: -0.03em;">{{ paciente.nombre }}</h2>
+      <p style="font-size: 0.8rem; color: var(--muted); margin-top: 2px;">
+        {{ paciente.get_enfermedad_display }}
+        {% if paciente.edad %} · {{ paciente.edad }} años{% endif %}
+        · DNI {{ paciente.dni }}
+      </p>
+    </div>
+    <a href="{% url 'detalle_paciente' paciente.id %}"
+       style="margin-left: auto; font-size: 0.8rem; color: var(--muted); text-decoration: none;">
+      ← Volver a métricas
+    </a>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tab-nav">
+    <button class="tab-btn active" onclick="switchTab(this, 'datos')">Datos Generales</button>
+    <button class="tab-btn" onclick="switchTab(this, 'antecedentes')">Antecedentes</button>
+    <button class="tab-btn" onclick="switchTab(this, 'prescripciones')">
+      Prescripciones
+      {% if prescripciones_activas.count %}
+        <span style="background:var(--primary);color:#fff;border-radius:10px;padding:1px 6px;font-size:0.65rem;margin-left:4px;">
+          {{ prescripciones_activas.count }}
+        </span>
+      {% endif %}
+    </button>
+    <button class="tab-btn" onclick="switchTab(this, 'umbrales')">Umbrales</button>
+  </div>
+
+  <!-- TAB: DATOS GENERALES -->
+  <div id="tab-datos" class="tab-panel active">
+    <form method="POST">
+      {% csrf_token %}
+      <input type="hidden" name="accion" value="actualizar_ficha">
+
+      <div class="card" style="margin-bottom: 20px;">
+        <p class="section-title">Información personal</p>
+        <div class="grid-2" style="margin-bottom: 16px;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label">Fecha de nacimiento</label>
+            <input type="date" name="fecha_nacimiento" class="form-input"
+              value="{{ paciente.fecha_nacimiento|date:'Y-m-d' }}">
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label">Teléfono de contacto</label>
+            <input type="text" name="telefono" class="form-input"
+              placeholder="Ej. 987654321" value="{{ paciente.telefono }}">
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom: 20px;">
+        <p class="section-title">Datos antropométricos</p>
+        <div class="grid-3" style="margin-bottom: 8px;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label">Tipo de sangre</label>
+            <select name="tipo_sangre" class="form-input">
+              <option value="">— Sin definir —</option>
+              {% for val, label in ficha.TIPOS_SANGRE %}
+                <option value="{{ val }}" {% if ficha.tipo_sangre == val %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label">Peso (kg)</label>
+            <input type="number" name="peso_kg" step="0.1" min="1" max="300" class="form-input"
+              placeholder="Ej. 72.5" value="{{ ficha.peso_kg|default:'' }}">
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label">Talla (cm)</label>
+            <input type="number" name="talla_cm" step="0.1" min="50" max="250" class="form-input"
+              placeholder="Ej. 168" value="{{ ficha.talla_cm|default:'' }}">
+          </div>
+        </div>
+        {% if ficha.imc %}
+        <div style="margin-top: 10px; font-size: 0.82rem; color: var(--text2);">
+          IMC calculado:
+          {% if ficha.imc < 18.5 %}
+            <span class="imc-pill imc-bajo">{{ ficha.imc }} — Bajo peso</span>
+          {% elif ficha.imc < 25 %}
+            <span class="imc-pill imc-normal">{{ ficha.imc }} — Normal</span>
+          {% elif ficha.imc < 30 %}
+            <span class="imc-pill imc-sobre">{{ ficha.imc }} — Sobrepeso</span>
+          {% else %}
+            <span class="imc-pill imc-obeso">{{ ficha.imc }} — Obesidad</span>
+          {% endif %}
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="card" style="margin-bottom: 20px;">
+        <p class="section-title">Contacto de emergencia</p>
+        <div class="grid-2">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label">Nombre</label>
+            <input type="text" name="contacto_emergencia_nombre" class="form-input"
+              placeholder="Nombre del contacto" value="{{ ficha.contacto_emergencia_nombre }}">
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label">Teléfono</label>
+            <input type="text" name="contacto_emergencia_tel" class="form-input"
+              placeholder="Número de contacto" value="{{ ficha.contacto_emergencia_tel }}">
+          </div>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-primary">Guardar datos generales</button>
+    </form>
+  </div>
+
+  <!-- TAB: ANTECEDENTES -->
+  <div id="tab-antecedentes" class="tab-panel">
+    <form method="POST">
+      {% csrf_token %}
+      <input type="hidden" name="accion" value="actualizar_ficha">
+      <!-- Campos ocultos para no pisar datos de la otra pestaña -->
+      <input type="hidden" name="fecha_nacimiento" value="{{ paciente.fecha_nacimiento|date:'Y-m-d' }}">
+      <input type="hidden" name="telefono" value="{{ paciente.telefono }}">
+      <input type="hidden" name="tipo_sangre" value="{{ ficha.tipo_sangre }}">
+      <input type="hidden" name="peso_kg" value="{{ ficha.peso_kg|default:'' }}">
+      <input type="hidden" name="talla_cm" value="{{ ficha.talla_cm|default:'' }}">
+      <input type="hidden" name="contacto_emergencia_nombre" value="{{ ficha.contacto_emergencia_nombre }}">
+      <input type="hidden" name="contacto_emergencia_tel" value="{{ ficha.contacto_emergencia_tel }}">
+
+      <div class="card" style="margin-bottom: 20px;">
+        <p class="section-title">Antecedentes personales</p>
+        <div class="form-group">
+          <label class="form-label">Alergias conocidas</label>
+          <textarea name="alergias" class="form-input" rows="2"
+            placeholder="Ej. Penicilina, látex, mariscos...">{{ ficha.alergias }}</textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Cirugías previas</label>
+          <textarea name="cirugias_previas" class="form-input" rows="2"
+            placeholder="Ej. Apendicectomía 2018, colecistectomía 2021...">{{ ficha.cirugias_previas }}</textarea>
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+          <label class="form-label">Hospitalizaciones</label>
+          <textarea name="hospitalizaciones" class="form-input" rows="2"
+            placeholder="Ej. UCI por descompensación diabética, enero 2022...">{{ ficha.hospitalizaciones }}</textarea>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom: 20px;">
+        <p class="section-title">Antecedentes familiares</p>
+        <div class="form-group" style="margin-bottom: 0;">
+          <textarea name="antecedentes_familiares" class="form-input" rows="3"
+            placeholder="Ej. Padre con diabetes tipo 2, madre con HTA, abuelo con infarto...">{{ ficha.antecedentes_familiares }}</textarea>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom: 20px;">
+        <p class="section-title">Historia de la enfermedad actual</p>
+        <div class="form-group" style="margin-bottom: 0;">
+          <textarea name="historia_enfermedad" class="form-input" rows="4"
+            placeholder="Descripción del diagnóstico, evolución, tratamientos previos...">{{ ficha.historia_enfermedad }}</textarea>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-primary">Guardar antecedentes</button>
+    </form>
+  </div>
+
+  <!-- TAB: PRESCRIPCIONES -->
+  <div id="tab-prescripciones" class="tab-panel">
+
+    <!-- Agregar prescripción -->
+    <div class="card" style="margin-bottom: 20px;">
+      <p class="section-title">Nueva prescripción</p>
+      <form method="POST">
+        {% csrf_token %}
+        <input type="hidden" name="accion" value="agregar_prescripcion">
+        <div class="grid-2" style="margin-bottom: 14px;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label">Medicamento *</label>
+            <input type="text" name="medicamento" class="form-input" placeholder="Ej. Metformina" required>
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label">Dosis *</label>
+            <input type="text" name="dosis" class="form-input" placeholder="Ej. 850 mg" required>
+          </div>
+        </div>
+        <div class="grid-3" style="margin-bottom: 14px;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label">Vía</label>
+            <select name="via" class="form-input">
+              {% for val, label in vias %}
+                <option value="{{ val }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label">Frecuencia</label>
+            <select name="frecuencia" class="form-input">
+              {% for val, label in frecuencias_presc %}
+                <option value="{{ val }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label">Fecha inicio *</label>
+            <input type="date" name="fecha_inicio" class="form-input" value="{{ today }}" required>
+          </div>
+        </div>
+        <div class="grid-2" style="margin-bottom: 16px;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label">Fecha fin <span style="color:var(--muted)">(opcional)</span></label>
+            <input type="date" name="fecha_fin" class="form-input">
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label">Indicaciones adicionales</label>
+            <input type="text" name="indicaciones" class="form-input" placeholder="Ej. Tomar con comidas">
+          </div>
+        </div>
+        <button type="submit" class="btn-primary">Agregar prescripción</button>
+      </form>
+    </div>
+
+    <!-- Prescripciones activas -->
+    <div class="card" style="margin-bottom: 20px;">
+      <p class="section-title">Prescripciones activas</p>
+      {% if prescripciones_activas %}
+        {% for p in prescripciones_activas %}
+        <div class="presc-row">
+          <div style="flex: 1;">
+            <div style="font-size: 0.9rem; font-weight: 700; color: var(--text);">
+              {{ p.medicamento }}
+              <span style="font-weight: 500; color: var(--text2);">— {{ p.dosis }}</span>
+            </div>
+            <div style="font-size: 0.75rem; color: var(--muted); margin-top: 3px;">
+              <span class="badge-via">{{ p.get_via_display }}</span>
+              · {{ p.get_frecuencia_display }}
+              · Desde {{ p.fecha_inicio|date:"d/m/Y" }}
+              {% if p.fecha_fin %} hasta {{ p.fecha_fin|date:"d/m/Y" }}{% endif %}
+              {% if p.indicaciones %} · <em>{{ p.indicaciones }}</em>{% endif %}
+            </div>
+            <div style="font-size: 0.72rem; color: var(--muted); margin-top: 2px;">
+              Prescrito por Dr. {{ p.medico.get_full_name|default:p.medico.username }}
+            </div>
+          </div>
+          <form method="POST" style="margin-left: 16px;" onsubmit="return confirm('¿Marcar como inactiva?')">
+            {% csrf_token %}
+            <input type="hidden" name="accion" value="desactivar_prescripcion">
+            <input type="hidden" name="prescripcion_id" value="{{ p.id }}">
+            <button type="submit" class="btn-outline"
+              style="font-size: 0.75rem; padding: 5px 12px; color: var(--muted); border-color: var(--border);">
+              Desactivar
+            </button>
+          </form>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty-state">No hay prescripciones activas registradas.</div>
+      {% endif %}
+    </div>
+
+    <!-- Prescripciones pasadas -->
+    {% if prescripciones_pasadas %}
+    <div class="card">
+      <p class="section-title">Historial de prescripciones</p>
+      {% for p in prescripciones_pasadas %}
+      <div class="presc-row" style="opacity: 0.6;">
+        <div>
+          <div style="font-size: 0.85rem; font-weight: 600; text-decoration: line-through; color: var(--text2);">
+            {{ p.medicamento }} — {{ p.dosis }}
+          </div>
+          <div style="font-size: 0.72rem; color: var(--muted);">
+            {{ p.get_via_display }} · {{ p.get_frecuencia_display }}
+            · {{ p.fecha_inicio|date:"d/m/Y" }}{% if p.fecha_fin %} → {{ p.fecha_fin|date:"d/m/Y" }}{% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+  </div>
+
+  <!-- TAB: UMBRALES -->
+  <div id="tab-umbrales" class="tab-panel">
+    <div class="card">
+      <p class="section-title">Rangos de alerta personalizados por paciente</p>
+      <p style="font-size: 0.8rem; color: var(--muted); margin-bottom: 20px; line-height: 1.5;">
+        Si no se definen umbrales para un tipo de métrica, se usan los valores estándar del sistema.
+        Deja en blanco los campos que no apliquen.
+      </p>
+      <form method="POST">
+        {% csrf_token %}
+        <input type="hidden" name="accion" value="guardar_umbrales">
+        <div style="display: grid; grid-template-columns: 1fr 120px 120px; gap: 10px; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--border);">
+          <span style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted);">Métrica</span>
+          <span style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted);">Mín</span>
+          <span style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted);">Máx</span>
+        </div>
+        {% for tipo_val, tipo_label in tipos_metrica %}
+        <div class="umbral-row">
+          <span class="umbral-label">{{ tipo_label }}</span>
+          <input type="number" name="min_{{ tipo_val }}" step="0.1" class="form-input"
+            placeholder="—"
+            value="{% for k, u in umbrales.items %}{% if k == tipo_val %}{{ u.valor_min|default:'' }}{% endif %}{% endfor %}">
+          <input type="number" name="max_{{ tipo_val }}" step="0.1" class="form-input"
+            placeholder="—"
+            value="{% for k, u in umbrales.items %}{% if k == tipo_val %}{{ u.valor_max|default:'' }}{% endif %}{% endfor %}">
+        </div>
+        {% endfor %}
+        <button type="submit" class="btn-primary" style="margin-top: 16px;">Guardar umbrales</button>
+      </form>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function switchTab(btn, name) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+</script>
+{% endblock %}

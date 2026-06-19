@@ -1,7 +1,7 @@
 import re
 import secrets
 import random
-from datetime import timedelta
+from datetime import timedelta, date
 from django.utils import timezone
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
@@ -10,7 +10,7 @@ from django.contrib.auth.models import User, Group
 from django.http import HttpResponse, JsonResponse
 from django.template.loader import get_template
 from xhtml2pdf import pisa
-from .models import Paciente, Metrica, Alerta, NotaClinica, PlanCuidado, LogAcceso, PerfilMedico
+from .models import Paciente, Metrica, Alerta, NotaClinica, PlanCuidado, LogAcceso, PerfilMedico, FichaMedica, Prescripcion, UmbralPersonalizado, Consulta
 
 
 def es_medico(user):
@@ -112,11 +112,11 @@ def detalle_paciente(request, paciente_id):
                 messages.success(request, 'Nota clínica agregada correctamente.')
 
         elif accion == 'agregar_plan':
-            tipo         = request.POST.get('plan_tipo')
+            tipo = request.POST.get('plan_tipo')
             tipo_metrica = request.POST.get('plan_tipo_metrica') or None
-            descripcion  = request.POST.get('plan_descripcion', '').strip()
-            hora         = request.POST.get('plan_hora')
-            frecuencia   = request.POST.get('plan_frecuencia', 'diario')
+            descripcion = request.POST.get('plan_descripcion', '').strip()
+            hora = request.POST.get('plan_hora')
+            frecuencia = request.POST.get('plan_frecuencia', 'diario')
 
             if descripcion and hora:
                 PlanCuidado.objects.create(
@@ -151,7 +151,6 @@ def detalle_paciente(request, paciente_id):
             messages.success(request, 'Ítem eliminado del plan.')
 
         else:
-            # compatibilidad: form de notas sin campo accion
             texto = request.POST.get('nota_texto', '').strip()
             if texto:
                 NotaClinica.objects.create(
@@ -178,8 +177,8 @@ def detalle_paciente(request, paciente_id):
 
     estado_paciente = calcular_estado_paciente(paciente)
     metricas = paciente.metricas.all().order_by('-fecha')
-    notas    = paciente.notas.select_related('medico').all()
-    planes   = paciente.planes.filter(activo=True)
+    notas = paciente.notas.select_related('medico').all()
+    planes = paciente.planes.filter(activo=True)
 
     ultima_metrica   = metricas.first()
     ultima_valor_str = f"{float(ultima_metrica.valor):.1f}" if ultima_metrica else None
@@ -412,12 +411,17 @@ def registrar_paciente(request):
         grupo_paciente, _ = Group.objects.get_or_create(name='Paciente')
         user.groups.add(grupo_paciente)
 
+        fecha_nac = request.POST.get('fecha_nacimiento')
+        telefono = request.POST.get('telefono', '').strip()
         paciente = Paciente.objects.create(
             user=user,
             nombre=nombre,
             dni=dni,
             enfermedad=enfermedad,
+            fecha_nacimiento=fecha_nac if fecha_nac else None,
+            telefono=telefono,
         )
+        FichaMedica.objects.create(paciente=paciente)
 
         registrar_log(
             request,
@@ -499,3 +503,182 @@ def perfil_medico(request):
         'perfil': perfil,
         'user': user,
     })
+
+
+@login_required
+@medico_required
+def ficha_medica(request, paciente_id):
+    paciente = get_object_or_404(Paciente, id=paciente_id)
+    ficha, _ = FichaMedica.objects.get_or_create(paciente=paciente)
+    umbrales = {u.tipo_metrica: u for u in paciente.umbrales.all()}
+
+    if request.method == 'POST':
+        accion = request.POST.get('accion')
+
+        if accion == 'actualizar_ficha':
+            fecha_nac = request.POST.get('fecha_nacimiento')
+            paciente.fecha_nacimiento = fecha_nac if fecha_nac else None
+            paciente.telefono = request.POST.get('telefono', '').strip()
+            paciente.save()
+
+            ficha.tipo_sangre               = request.POST.get('tipo_sangre', '')
+            peso = request.POST.get('peso_kg')
+            talla = request.POST.get('talla_cm')
+            ficha.peso_kg                   = float(peso) if peso else None
+            ficha.talla_cm                  = float(talla) if talla else None
+            ficha.alergias                  = request.POST.get('alergias', '').strip()
+            ficha.cirugias_previas          = request.POST.get('cirugias_previas', '').strip()
+            ficha.hospitalizaciones         = request.POST.get('hospitalizaciones', '').strip()
+            ficha.antecedentes_familiares   = request.POST.get('antecedentes_familiares', '').strip()
+            ficha.historia_enfermedad       = request.POST.get('historia_enfermedad', '').strip()
+            ficha.contacto_emergencia_nombre = request.POST.get('contacto_emergencia_nombre', '').strip()
+            ficha.contacto_emergencia_tel   = request.POST.get('contacto_emergencia_tel', '').strip()
+            ficha.save()
+
+            registrar_log(request, accion='ver_paciente', paciente=paciente,
+                          descripcion='Actualizó ficha médica')
+            messages.success(request, 'Ficha médica actualizada correctamente.')
+
+        elif accion == 'agregar_prescripcion':
+            medicamento  = request.POST.get('medicamento', '').strip()
+            dosis        = request.POST.get('dosis', '').strip()
+            fecha_inicio = request.POST.get('fecha_inicio')
+            if medicamento and dosis and fecha_inicio:
+                fecha_fin = request.POST.get('fecha_fin') or None
+                Prescripcion.objects.create(
+                    paciente=paciente,
+                    medico=request.user,
+                    medicamento=medicamento,
+                    dosis=dosis,
+                    via=request.POST.get('via', 'oral'),
+                    frecuencia=request.POST.get('frecuencia'),
+                    indicaciones=request.POST.get('indicaciones', '').strip(),
+                    fecha_inicio=fecha_inicio,
+                    fecha_fin=fecha_fin,
+                )
+                messages.success(request, f'Prescripción de {medicamento} agregada.')
+            else:
+                messages.error(request, 'Medicamento, dosis y fecha de inicio son obligatorios.')
+
+        elif accion == 'desactivar_prescripcion':
+            presc_id = request.POST.get('prescripcion_id')
+            Prescripcion.objects.filter(pk=presc_id, paciente=paciente).update(activa=False)
+            messages.success(request, 'Prescripción marcada como inactiva.')
+
+        elif accion == 'guardar_umbrales':
+            tipos = ['glucosa', 'presion_sistolica', 'presion_diastolica', 'saturacion', 'frecuencia']
+            for tipo in tipos:
+                min_val = request.POST.get(f'min_{tipo}')
+                max_val = request.POST.get(f'max_{tipo}')
+                if min_val or max_val:
+                    UmbralPersonalizado.objects.update_or_create(
+                        paciente=paciente,
+                        tipo_metrica=tipo,
+                        defaults={
+                            'valor_min': float(min_val) if min_val else None,
+                            'valor_max': float(max_val) if max_val else None,
+                        },
+                    )
+            messages.success(request, 'Umbrales personalizados guardados.')
+
+        return redirect('ficha_medica', paciente_id=paciente_id)
+
+    prescripciones_activas = paciente.prescripciones.filter(activa=True).select_related('medico')
+    prescripciones_pasadas = paciente.prescripciones.filter(activa=False).select_related('medico')
+
+    return render(request, 'core/ficha_medica.html', {
+        'paciente':               paciente,
+        'ficha':                  ficha,
+        'prescripciones_activas': prescripciones_activas,
+        'prescripciones_pasadas': prescripciones_pasadas,
+        'umbrales':               umbrales,
+        'tipos_metrica':          UmbralPersonalizado.TIPOS_METRICA,
+        'today':                  date.today().isoformat(),
+        'vias':                   Prescripcion.VIAS,
+        'frecuencias_presc':      Prescripcion.FRECUENCIAS,
+    })
+
+
+@login_required
+@medico_required
+def agenda(request):
+    hoy = date.today()
+
+    if request.method == 'POST':
+        paciente_id  = request.POST.get('paciente_id')
+        tipo         = request.POST.get('tipo', 'control')
+        fecha_hora   = request.POST.get('fecha_hora')
+        motivo       = request.POST.get('motivo', '').strip()
+
+        if paciente_id and fecha_hora and motivo:
+            paciente = get_object_or_404(Paciente, pk=paciente_id)
+            Consulta.objects.create(
+                paciente=paciente,
+                medico=request.user,
+                tipo=tipo,
+                fecha_hora=fecha_hora,
+                motivo=motivo,
+            )
+            messages.success(request, f'Cita agendada para {paciente.nombre}.')
+        else:
+            messages.error(request, 'Paciente, fecha/hora y motivo son obligatorios.')
+        return redirect('agenda')
+
+    proximas = (Consulta.objects
+                .filter(estado='programada', fecha_hora__date__gte=hoy)
+                .select_related('paciente', 'medico')
+                .order_by('fecha_hora'))
+
+    hoy_citas = proximas.filter(fecha_hora__date=hoy)
+    semana_citas = proximas.filter(fecha_hora__date__gt=hoy)[:20]
+
+    recientes = (Consulta.objects
+                 .filter(estado='realizada')
+                 .select_related('paciente')
+                 .order_by('-fecha_hora')[:10])
+
+    pacientes = Paciente.objects.all().order_by('nombre')
+
+    return render(request, 'core/agenda.html', {
+        'hoy':          hoy,
+        'hoy_citas':    hoy_citas,
+        'semana_citas': semana_citas,
+        'recientes':    recientes,
+        'pacientes':    pacientes,
+        'tipos':        Consulta.TIPOS,
+        'today':        hoy.isoformat(),
+    })
+
+
+@login_required
+@medico_required
+def completar_consulta(request, consulta_id):
+    if request.method != 'POST':
+        return redirect('agenda')
+
+    consulta = get_object_or_404(Consulta, pk=consulta_id)
+    consulta.diagnostico  = request.POST.get('diagnostico', '').strip()
+    consulta.indicaciones = request.POST.get('indicaciones', '').strip()
+    proxima   = request.POST.get('proxima_cita')
+    consulta.proxima_cita = proxima if proxima else None
+    consulta.estado       = 'realizada'
+    consulta.save()
+
+    registrar_log(request, accion='ver_paciente', paciente=consulta.paciente,
+                  descripcion=f'Consulta completada: {consulta.get_tipo_display()}')
+    messages.success(request, 'Consulta registrada correctamente.')
+    return redirect('agenda')
+
+
+@login_required
+@medico_required
+def cambiar_estado_consulta(request, consulta_id):
+    if request.method != 'POST':
+        return redirect('agenda')
+
+    consulta = get_object_or_404(Consulta, pk=consulta_id)
+    nuevo_estado = request.POST.get('estado')
+    if nuevo_estado in ('cancelada', 'no_asistio', 'programada'):
+        consulta.estado = nuevo_estado
+        consulta.save()
+    return redirect('agenda')

@@ -1,0 +1,259 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Agenda{% endblock %}
+
+{% block content %}
+<style>
+  .agenda-grid { display: grid; grid-template-columns: 1fr 340px; gap: 24px; align-items: start; }
+  .section-title {
+    font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.06em; color: var(--muted);
+    padding-bottom: 10px; border-bottom: 1px solid var(--border); margin-bottom: 16px;
+  }
+  .cita-row {
+    display: flex; align-items: flex-start; gap: 14px;
+    padding: 14px 0; border-bottom: 1px solid var(--border);
+  }
+  .cita-row:last-child { border-bottom: none; }
+  .cita-hora {
+    min-width: 52px; text-align: center;
+    font-size: 0.85rem; font-weight: 700; color: var(--primary);
+    background: var(--primary-light); border-radius: 8px; padding: 6px 4px;
+  }
+  .cita-hora span { display: block; font-size: 0.65rem; font-weight: 500; color: var(--muted); }
+  .badge-estado {
+    display: inline-block; font-size: 0.68rem; font-weight: 700;
+    padding: 2px 8px; border-radius: 20px;
+  }
+  .estado-programada { background: var(--primary-light); color: var(--primary); }
+  .estado-realizada  { background: var(--ok-light); color: var(--ok); }
+  .estado-cancelada  { background: #f1f5f9; color: var(--muted); }
+  .estado-no_asistio { background: var(--alert-light); color: var(--alert); }
+  .badge-tipo {
+    font-size: 0.68rem; font-weight: 600; padding: 2px 8px;
+    border-radius: 20px; background: #f1f5f9; color: var(--text2);
+  }
+  .empty-state { text-align: center; padding: 32px 0; color: var(--muted); font-size: 0.82rem; }
+
+  /* Modal */
+  .modal-bg {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.4); z-index: 200; align-items: center; justify-content: center;
+  }
+  .modal-bg.open { display: flex; }
+  .modal {
+    background: var(--surface); border-radius: 16px; padding: 28px;
+    width: 100%; max-width: 520px; box-shadow: var(--shadow-md);
+  }
+  .modal h3 { font-size: 1rem; font-weight: 800; margin-bottom: 20px; }
+
+  @media (max-width: 768px) {
+    .agenda-grid { grid-template-columns: 1fr; }
+  }
+</style>
+
+<div class="container">
+
+  {% if messages %}
+    {% for msg in messages %}
+    {% if 'correctamente' in msg|lower or 'agendad' in msg|lower %}
+    <div class="msg-ok" style="margin-bottom:16px;padding:11px 16px;border-radius:8px;font-size:0.82rem;font-weight:600;background:var(--ok-light);color:var(--ok);border:1px solid #86efac;">{{ msg }}</div>
+    {% else %}
+    <div style="margin-bottom:16px;padding:11px 16px;border-radius:8px;font-size:0.82rem;font-weight:600;background:var(--alert-light);color:var(--alert);border:1px solid #fca5a5;">{{ msg }}</div>
+    {% endif %}
+    {% endfor %}
+  {% endif %}
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
+    <div>
+      <h1 style="font-size:1.4rem;font-weight:800;letter-spacing:-0.03em;">Agenda</h1>
+      <p style="font-size:0.8rem;color:var(--muted);margin-top:3px;">{{ hoy|date:"l, d \d\e F \d\e Y" }}</p>
+    </div>
+    <button class="btn-primary" onclick="document.getElementById('modalNuevaCita').classList.add('open')">
+      + Nueva cita
+    </button>
+  </div>
+
+  <div class="agenda-grid">
+
+    <!-- Columna principal -->
+    <div>
+
+      <!-- Citas de hoy -->
+      <div class="card" style="margin-bottom:20px;">
+        <p class="section-title">Hoy</p>
+        {% if hoy_citas %}
+          {% for c in hoy_citas %}
+          <div class="cita-row">
+            <div class="cita-hora">
+              {{ c.fecha_hora|date:"H:i" }}
+              <span>{{ c.fecha_hora|date:"d/m" }}</span>
+            </div>
+            <div style="flex:1;">
+              <div style="font-size:0.9rem;font-weight:700;">{{ c.paciente.nombre }}</div>
+              <div style="font-size:0.75rem;color:var(--muted);margin-top:3px;">
+                <span class="badge-tipo">{{ c.get_tipo_display }}</span>
+                · {{ c.motivo }}
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;flex-shrink:0;">
+              <span class="badge-estado estado-{{ c.estado }}">{{ c.get_estado_display }}</span>
+              {% if c.estado == 'programada' %}
+              <button class="btn-outline" style="font-size:0.72rem;padding:4px 10px;"
+                onclick="abrirCompletar({{ c.id }}, '{{ c.paciente.nombre|escapejs }}')">
+                Completar
+              </button>
+              {% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="empty-state">No hay citas para hoy.</div>
+        {% endif %}
+      </div>
+
+      <!-- Próximas citas -->
+      <div class="card" style="margin-bottom:20px;">
+        <p class="section-title">Próximas citas</p>
+        {% if semana_citas %}
+          {% for c in semana_citas %}
+          <div class="cita-row">
+            <div class="cita-hora">
+              {{ c.fecha_hora|date:"H:i" }}
+              <span>{{ c.fecha_hora|date:"d/m" }}</span>
+            </div>
+            <div style="flex:1;">
+              <div style="font-size:0.9rem;font-weight:700;">{{ c.paciente.nombre }}</div>
+              <div style="font-size:0.75rem;color:var(--muted);margin-top:3px;">
+                <span class="badge-tipo">{{ c.get_tipo_display }}</span>
+                · {{ c.motivo }}
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;">
+              <span class="badge-estado estado-{{ c.estado }}">{{ c.get_estado_display }}</span>
+              <form method="POST" action="{% url 'cambiar_estado_consulta' c.id %}">
+                {% csrf_token %}
+                <input type="hidden" name="estado" value="cancelada">
+                <button type="submit" class="btn-outline"
+                  style="font-size:0.72rem;padding:4px 10px;color:var(--muted);border-color:var(--border);"
+                  onclick="return confirm('¿Cancelar esta cita?')">
+                  Cancelar
+                </button>
+              </form>
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="empty-state">No hay citas programadas.</div>
+        {% endif %}
+      </div>
+
+      <!-- Consultas recientes realizadas -->
+      {% if recientes %}
+      <div class="card">
+        <p class="section-title">Últimas consultas realizadas</p>
+        {% for c in recientes %}
+        <div class="cita-row">
+          <div class="cita-hora" style="background:#f1f5f9;color:var(--muted);">
+            {{ c.fecha_hora|date:"H:i" }}
+            <span>{{ c.fecha_hora|date:"d/m" }}</span>
+          </div>
+          <div style="flex:1;">
+            <div style="font-size:0.88rem;font-weight:700;">{{ c.paciente.nombre }}</div>
+            <div style="font-size:0.75rem;color:var(--muted);margin-top:2px;">
+              <span class="badge-tipo">{{ c.get_tipo_display }}</span>
+              · {{ c.motivo }}
+              {% if c.diagnostico %} · <em>{{ c.diagnostico|truncatechars:60 }}</em>{% endif %}
+            </div>
+          </div>
+          <span class="badge-estado estado-realizada">Realizada</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+    </div>
+
+    <!-- Panel lateral: nueva cita rápida -->
+    <div>
+      <div class="card">
+        <p class="section-title">Agendar cita rápida</p>
+        <form method="POST">
+          {% csrf_token %}
+          <div class="form-group">
+            <label class="form-label">Paciente *</label>
+            <select name="paciente_id" class="form-input" required>
+              <option value="">— Seleccionar —</option>
+              {% for p in pacientes %}
+              <option value="{{ p.id }}">{{ p.nombre }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Tipo</label>
+            <select name="tipo" class="form-input">
+              {% for val, label in tipos %}
+              <option value="{{ val }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Fecha y hora *</label>
+            <input type="datetime-local" name="fecha_hora" class="form-input" required
+              min="{{ today }}T00:00">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Motivo *</label>
+            <input type="text" name="motivo" class="form-input"
+              placeholder="Ej. Control mensual de glucosa" required>
+          </div>
+          <button type="submit" class="btn-primary" style="width:100%;">Agendar</button>
+        </form>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Modal: completar consulta -->
+<div class="modal-bg" id="modalCompletar">
+  <div class="modal">
+    <h3 id="modalCompletarTitulo">Completar consulta</h3>
+    <form method="POST" id="formCompletar">
+      {% csrf_token %}
+      <div class="form-group">
+        <label class="form-label">Diagnóstico</label>
+        <textarea name="diagnostico" class="form-input" rows="3"
+          placeholder="Diagnóstico y hallazgos de la consulta..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Indicaciones</label>
+        <textarea name="indicaciones" class="form-input" rows="2"
+          placeholder="Indicaciones para el paciente..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Próxima cita <span style="color:var(--muted)">(opcional)</span></label>
+        <input type="date" name="proxima_cita" class="form-input">
+      </div>
+      <div style="display:flex;gap:12px;margin-top:8px;">
+        <button type="submit" class="btn-primary" style="flex:1;">Guardar</button>
+        <button type="button" class="btn-outline" style="flex:1;"
+          onclick="document.getElementById('modalCompletar').classList.remove('open')">
+          Cancelar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function abrirCompletar(id, nombre) {
+  document.getElementById('modalCompletarTitulo').textContent = 'Completar consulta — ' + nombre;
+  document.getElementById('formCompletar').action = '/consulta/' + id + '/completar/';
+  document.getElementById('modalCompletar').classList.add('open');
+}
+document.getElementById('modalCompletar').addEventListener('click', function(e) {
+  if (e.target === this) this.classList.remove('open');
+});
+</script>
+{% endblock %}

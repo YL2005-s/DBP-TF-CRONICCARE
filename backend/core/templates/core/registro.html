@@ -24,9 +24,13 @@
         <p style="font-size: 1.1rem; font-weight: 700; color: var(--warning); margin-top: 4px;">{{ credenciales.password }}</p>
       </div>
     </div>
-    <div style="display: flex; gap: 12px; margin-top: 24px;">
-      <a href="{% url 'dashboard' %}" class="btn-primary" style="flex: 1;">Volver al Dashboard</a>
+    <div style="margin-top: 20px; padding: 14px 16px; background: var(--primary-light); border-radius: 8px; font-size: 0.82rem; color: var(--primary);">
+      <strong>Siguiente paso recomendado:</strong> completa la ficha médica con antecedentes, prescripciones y umbrales personalizados.
+    </div>
+    <div style="display: flex; gap: 12px; margin-top: 16px;">
+      <a href="{% url 'ficha_medica' paciente.id %}" class="btn-primary" style="flex: 2;">Completar ficha médica →</a>
       <a href="{% url 'registrar' %}" class="btn-outline" style="flex: 1;">Registrar Otro</a>
+      <a href="{% url 'dashboard' %}" class="btn-outline" style="flex: 1;">Dashboard</a>
     </div>
   </div>
 
@@ -58,12 +62,28 @@
         <p class="form-hint">El DNI será usado como nombre de usuario para el acceso del paciente a la aplicación móvil.</p>
       </div>
 
+      <div class="form-group">
+        <label class="form-label">Fecha de nacimiento <span style="color:var(--muted)">(opcional)</span></label>
+        <input type="date" name="fecha_nacimiento" class="form-input">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Teléfono <span style="color:var(--muted)">(opcional)</span></label>
+        <input type="text" name="telefono" placeholder="Ej. 987654321" class="form-input">
+      </div>
+
       <div class="form-group" style="margin-bottom: 28px;">
         <label class="form-label">Enfermedad Crónica</label>
         <select name="enfermedad" class="form-input">
           <option value="diabetes_t2">Diabetes Tipo 2</option>
+          <option value="diabetes_t1">Diabetes Tipo 1</option>
           <option value="hipertension">Hipertensión Arterial</option>
           <option value="asma">Asma</option>
+          <option value="epoc">EPOC</option>
+          <option value="irc">Insuficiencia Renal Crónica</option>
+          <option value="icc">Insuficiencia Cardíaca Crónica</option>
+          <option value="artritis">Artritis Reumatoide</option>
+          <option value="otra">Otra</option>
         </select>
       </div>
 
