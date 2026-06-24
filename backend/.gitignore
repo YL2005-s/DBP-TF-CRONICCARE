@@ -11,7 +11,7 @@ db.sqlite3
 staticfiles/
 media/
 
-# Node (no subir node_modules, sí subir el CSS compilado)
+# Node
 node_modules/
 package-lock.json
 
