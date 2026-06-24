@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
-from datetime import date
+from django.utils import timezone
+from datetime import date, timedelta
 
 
 class Paciente(models.Model):
@@ -32,6 +33,23 @@ class Paciente(models.Model):
         return hoy.year - self.fecha_nacimiento.year - (
             (hoy.month, hoy.day) < (self.fecha_nacimiento.month, self.fecha_nacimiento.day)
         )
+
+    def calcular_estado(self):
+        ahora = timezone.now()
+        alerta_critica = self.alertas.filter(
+            resuelta=False,
+            criticidad='critica',
+            fecha__gte=ahora - timedelta(hours=24),
+        ).exists()
+        if alerta_critica:
+            return 'critico'
+        metricas_alerta = self.metricas.filter(
+            alerta=True,
+            fecha__gte=ahora - timedelta(hours=48),
+        ).count()
+        if metricas_alerta >= 2:
+            return 'riesgo'
+        return 'estable'
 
     def __str__(self):
         return self.nombre
@@ -71,11 +89,22 @@ class FichaMedica(models.Model):
 
 class Metrica(models.Model):
     TIPOS = [
-        ('glucosa',    'Glucosa'),
-        ('presion',    'Presión Arterial'),
+        ('glucosa', 'Glucosa'),
+        ('presion', 'Presión Arterial'),
         ('saturacion', 'Saturación O2'),
         ('frecuencia', 'Frecuencia Cardíaca'),
     ]
+
+    UMBRALES = {
+        'diabetes_t2':  {'tipo': 'glucosa', 'min': None, 'max': 126},
+        'diabetes_t1':  {'tipo': 'glucosa', 'min': None, 'max': 126},
+        'hipertension': {'tipo': 'presion', 'min': None, 'max': 140},
+        'asma': {'tipo': 'saturacion', 'min': 90, 'max': None},
+        'epoc': {'tipo': 'saturacion', 'min': 88, 'max': None},
+        'irc': {'tipo': 'presion', 'min': None, 'max': 130},
+        'icc': {'tipo': 'frecuencia', 'min': 50, 'max': 100},
+        'artritis': {'tipo': 'frecuencia', 'min': None, 'max': 100},
+    }
 
     paciente = models.ForeignKey(Paciente, on_delete = models.CASCADE, related_name = 'metricas')
     tipo = models.CharField(max_length = 50, choices = TIPOS)
@@ -83,15 +112,26 @@ class Metrica(models.Model):
     alerta = models.BooleanField(default = False)
     fecha = models.DateTimeField(auto_now_add = True)
 
+    @classmethod
+    def calcular_alerta(cls, enfermedad, valor):
+        umbral = cls.UMBRALES.get(enfermedad)
+        if not umbral:
+            return False
+        if umbral['max'] is not None and valor > umbral['max']:
+            return True
+        if umbral['min'] is not None and valor < umbral['min']:
+            return True
+        return False
+
 
 class Alerta(models.Model):
     CRITICIDAD = [
-        ('critica',  'Crítica'),
+        ('critica', 'Crítica'),
         ('moderada', 'Moderada'),
-        ('leve',     'Leve'),
+        ('leve', 'Leve'),
     ]
 
-    paciente = models.ForeignKey(Paciente, on_delete = models.CASCADE)
+    paciente = models.ForeignKey(Paciente, on_delete = models.CASCADE, related_name = 'alertas')
     metrica = models.ForeignKey(Metrica, on_delete = models.SET_NULL, null = True, related_name = 'alertas')
     mensaje = models.TextField()
     criticidad = models.CharField(max_length = 20, choices = CRITICIDAD)
@@ -119,30 +159,28 @@ class UmbralPersonalizado(models.Model):
         return f"Umbral {self.get_tipo_metrica_display()} — {self.paciente.nombre}"
 
 
-# ── Consultas / Citas ─────────────────────────────────────────────────────────
-
 class Consulta(models.Model):
     TIPOS = [
         ('primera_vez', 'Primera vez'),
-        ('control',     'Control rutinario'),
+        ('control', 'Control rutinario'),
         ('seguimiento', 'Seguimiento'),
-        ('urgencia',    'Urgencia'),
+        ('urgencia', 'Urgencia'),
     ]
     ESTADOS = [
         ('programada', 'Programada'),
-        ('realizada',  'Realizada'),
-        ('cancelada',  'Cancelada'),
+        ('realizada', 'Realizada'),
+        ('cancelada', 'Cancelada'),
         ('no_asistio', 'No asistió'),
     ]
-    paciente       = models.ForeignKey(Paciente, on_delete=models.CASCADE, related_name='consultas')
-    medico         = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='consultas')
-    tipo           = models.CharField(max_length=20, choices=TIPOS, default='control')
-    estado         = models.CharField(max_length=20, choices=ESTADOS, default='programada')
-    fecha_hora     = models.DateTimeField()
-    motivo         = models.CharField(max_length=300)
-    diagnostico    = models.TextField(blank=True)
-    indicaciones   = models.TextField(blank=True)
-    proxima_cita   = models.DateField(null=True, blank=True)
+    paciente = models.ForeignKey(Paciente, on_delete=models.CASCADE, related_name='consultas')
+    medico = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='consultas')
+    tipo = models.CharField(max_length=20, choices=TIPOS, default='control')
+    estado = models.CharField(max_length=20, choices=ESTADOS, default='programada')
+    fecha_hora = models.DateTimeField()
+    motivo = models.CharField(max_length=300)
+    diagnostico = models.TextField(blank=True)
+    indicaciones = models.TextField(blank=True)
+    proxima_cita = models.DateField(null=True, blank=True)
     fecha_registro = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -151,8 +189,6 @@ class Consulta(models.Model):
     def __str__(self):
         return f"{self.get_tipo_display()} — {self.paciente.nombre} ({self.fecha_hora:%d/%m/%Y})"
 
-
-# ── Notas y Plan de Cuidado ───────────────────────────────────────────────────
 
 class NotaClinica(models.Model):
     paciente = models.ForeignKey(Paciente, on_delete = models.CASCADE, related_name = 'notas')
@@ -266,7 +302,6 @@ class LogAcceso(models.Model):
         ('marcar_alerta', 'Marcar alerta como resuelta'),
         ('generar_pdf', 'Generar reporte PDF'),
         ('registrar_paciente', 'Registrar paciente'),
-        ('simular_metrica', 'Simular métrica'),
     ]
     
     medico = models.ForeignKey(User, on_delete = models.SET_NULL, null = True, related_name = 'logs')

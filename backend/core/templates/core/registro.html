@@ -3,34 +3,60 @@
 {% block title %}Registrar Paciente{% endblock %}
 
 {% block content %}
-<div class="container" style="max-width: 640px;">
+<div class="p-10 px-12 max-w-4xl mx-auto">
 
   {% if registro_exitoso %}
-  <div class="card" style="border-left: 4px solid var(--ok);">
-    <h3 style="font-size: 0.85rem; font-weight: 700; color: var(--ok); text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 12px;">
-      Paciente registrado correctamente
-    </h3>
-    <p style="font-size: 0.85rem; color: var(--text2); line-height: 1.6; margin-bottom: 20px;">
-      Comparte estas credenciales con <strong style="color: var(--text);">{{ paciente.nombre }}</strong>.
-      La contraseña no se podrá recuperar después de cerrar esta página.
-    </p>
-    <div style="background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 20px; font-family: monospace;">
-      <div style="margin-bottom: 14px;">
-        <span style="font-size: 0.68rem; color: var(--muted); font-weight: 700; text-transform: uppercase; font-family: 'Inter', sans-serif;">Usuario</span>
-        <p style="font-size: 1.1rem; font-weight: 700; color: var(--primary); margin-top: 4px;">{{ credenciales.usuario }}</p>
+  <div class="bg-surface rounded-xl border border-border shadow-sm overflow-hidden">
+
+    <div class="bg-ok/8 border-b border-ok/20 px-8 py-6 flex items-center gap-4">
+      <div class="w-11 h-11 rounded-full bg-ok/15 flex items-center justify-center shrink-0">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-ok">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
       </div>
       <div>
-        <span style="font-size: 0.68rem; color: var(--muted); font-weight: 700; text-transform: uppercase; font-family: 'Inter', sans-serif;">Contraseña temporal</span>
-        <p style="font-size: 1.1rem; font-weight: 700; color: var(--warning); margin-top: 4px;">{{ credenciales.password }}</p>
+        <h3 class="text-[1.05rem] font-bold text-text">Paciente dado de alta correctamente</h3>
+        <p class="text-[0.82rem] text-muted mt-0.5">{{ paciente.nombre }} ha sido registrado en el sistema.</p>
       </div>
     </div>
-    <div style="margin-top: 20px; padding: 14px 16px; background: var(--primary-light); border-radius: 8px; font-size: 0.82rem; color: var(--primary);">
-      <strong>Siguiente paso recomendado:</strong> completa la ficha médica con antecedentes, prescripciones y umbrales personalizados.
-    </div>
-    <div style="display: flex; gap: 12px; margin-top: 16px;">
-      <a href="{% url 'ficha_medica' paciente.id %}" class="btn-primary" style="flex: 2;">Completar ficha médica →</a>
-      <a href="{% url 'registrar' %}" class="btn-outline" style="flex: 1;">Registrar Otro</a>
-      <a href="{% url 'dashboard' %}" class="btn-outline" style="flex: 1;">Dashboard</a>
+
+    <div class="px-8 py-6">
+      <p class="text-[0.82rem] text-text2 mb-4">Comparte estas credenciales con el paciente. <strong class="text-alert">La contraseña no podrá recuperarse una vez cierres esta página.</strong></p>
+      
+      <div class="grid grid-cols-2 gap-4 mb-6">
+        <div class="bg-bg border border-border rounded-xl p-5">
+          <span class="text-[0.68rem] text-muted font-bold uppercase tracking-[0.06em]">Usuario</span>
+          <p class="text-[1.25rem] font-bold text-primary font-mono mt-2 tracking-wide">{{ credenciales.usuario }}</p>
+        </div>
+        <div class="bg-bg border border-border rounded-xl p-5">
+          <span class="text-[0.68rem] text-muted font-bold uppercase tracking-[0.06em]">Contraseña temporal</span>
+          <p class="text-[1.25rem] font-bold text-warning font-mono mt-2 tracking-wide">{{ credenciales.password }}</p>
+        </div>
+      </div>
+
+      <div class="flex items-start gap-3 px-4 py-3.5 bg-primary-light border border-primary/15 rounded-xl mb-6">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-primary mt-0.5 shrink-0">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <p class="text-[0.82rem] text-primary"><strong>Siguiente paso:</strong> completa la ficha médica con antecedentes, prescripciones y umbrales personalizados para este paciente.</p>
+      </div>
+
+      <a href="{% url 'ficha_medica' paciente.id %}" class="flex items-center justify-center gap-2 w-full bg-primary text-white px-5 py-3 rounded-xl font-bold text-[0.9rem] font-sans no-underline transition-colors duration-200 hover:bg-primary-dark mb-3">
+        Completar ficha médica
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </a>
+
+      <div class="flex gap-3">
+        <a href="{% url 'registrar' %}" class="flex-1 flex items-center justify-center gap-2 bg-surface border border-border text-text2 px-5 py-2.5 rounded-xl font-semibold text-[0.85rem] font-sans no-underline transition-colors duration-200 hover:bg-bg hover:text-text">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Registrar otro
+        </a>
+        <a href="{% url 'dashboard' %}" class="flex-1 flex items-center justify-center gap-2 bg-surface border border-border text-text2 px-5 py-2.5 rounded-xl font-semibold text-[0.85rem] font-sans no-underline transition-colors duration-200 hover:bg-bg hover:text-text">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          Dashboard
+        </a>
+      </div>
+
     </div>
   </div>
 
@@ -38,60 +64,68 @@
 
   {% if messages %}
   {% for msg in messages %}
-  <div style="margin-bottom: 16px; padding: 12px 16px; background: var(--alert-light); border: 1px solid #fca5a5; border-radius: 8px; font-size: 0.82rem; color: var(--alert); font-weight: 600;">
+  <div class="mb-4 px-4 py-3 bg-alert-light border border-[#fca5a5] rounded-lg text-[0.82rem] text-alert font-semibold">
     {{ msg }}
   </div>
   {% endfor %}
   {% endif %}
 
-  <div class="card">
-    <h2 style="font-weight: 800; font-size: 1.4rem; letter-spacing: -0.03em; color: var(--text); margin-bottom: 6px;">Registro Clínico</h2>
-    <p style="font-size: 0.82rem; color: var(--muted); margin-bottom: 28px;">Se creará un usuario de acceso con el DNI como nombre de usuario.</p>
+  <div class="bg-surface rounded-xl border border-border p-6 shadow-sm">
+    <h2 class="font-black text-[1.4rem] tracking-wide text-text mb-1.5">Registro Clínico</h2>
+    <p class="text-[0.82rem] text-muted mb-7">Se creará un usuario de acceso con el DNI como nombre de usuario.</p>
 
     <form method="POST">
       {% csrf_token %}
 
-      <div class="form-group">
-        <label class="form-label">Nombre del Paciente</label>
-        <input type="text" name="nombre" placeholder="Ej. Juan Pérez" required class="form-input">
+      <div class="grid grid-cols-2 gap-5 mb-5">
+        <div>
+          <label class="block text-[0.8rem] font-semibold text-text2 mb-1.75">Nombre del Paciente</label>
+          <input type="text" name="nombre" placeholder="Ej. Juan Pérez" required value="{{ form_data.nombre }}"
+                 class="w-full px-3.5 py-2.5 bg-surface border-[1.5px] border-border text-text rounded-lg font-sans text-[0.9rem] outline-none transition-[border-color,box-shadow] duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(30,64,175,0.1)] appearance-auto">
+          <p class="text-[0.75rem] text-muted mt-1.5">Nombre completo tal como aparece en el documento de identidad.</p>
+        </div>
+        <div>
+          <label class="block text-[0.8rem] font-semibold text-text2 mb-1.75">DNI / Identificación</label>
+          <input type="text" name="dni" placeholder="8 dígitos" required maxlength="8" value="{{ form_data.dni }}"
+                 class="w-full px-3.5 py-2.5 bg-surface border-[1.5px] border-border text-text rounded-lg font-sans text-[0.9rem] outline-none transition-[border-color,box-shadow] duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(30,64,175,0.1)] appearance-auto">
+          <p class="text-[0.75rem] text-muted mt-1.5">El DNI será usado para el acceso del paciente a la aplicación móvil.</p>
+        </div>
       </div>
 
-      <div class="form-group">
-        <label class="form-label">DNI / Identificación</label>
-        <input type="text" name="dni" placeholder="8 dígitos" required maxlength="8" class="form-input">
-        <p class="form-hint">El DNI será usado como nombre de usuario para el acceso del paciente a la aplicación móvil.</p>
+      <div class="grid grid-cols-2 gap-5 mb-5">
+        <div>
+          <label class="block text-[0.8rem] font-semibold text-text2 mb-1.75">Fecha de nacimiento <span class="text-muted font-normal">(opcional)</span></label>
+          <input type="date" name="fecha_nacimiento" value="{{ form_data.fecha_nacimiento }}"
+                 class="w-full px-3.5 py-2.5 bg-surface border-[1.5px] border-border text-text rounded-lg font-sans text-[0.9rem] outline-none transition-[border-color,box-shadow] duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(30,64,175,0.1)] appearance-auto">
+        </div>
+        <div>
+          <label class="block text-[0.8rem] font-semibold text-text2 mb-1.75">Teléfono <span class="text-muted font-normal">(opcional)</span></label>
+          <input type="text" name="telefono" placeholder="Ej. 987654321" value="{{ form_data.telefono }}"
+                 class="w-full px-3.5 py-2.5 bg-surface border-[1.5px] border-border text-text rounded-lg font-sans text-[0.9rem] outline-none transition-[border-color,box-shadow] duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(30,64,175,0.1)] appearance-auto">
+        </div>
       </div>
 
-      <div class="form-group">
-        <label class="form-label">Fecha de nacimiento <span style="color:var(--muted)">(opcional)</span></label>
-        <input type="date" name="fecha_nacimiento" class="form-input">
-      </div>
-
-      <div class="form-group">
-        <label class="form-label">Teléfono <span style="color:var(--muted)">(opcional)</span></label>
-        <input type="text" name="telefono" placeholder="Ej. 987654321" class="form-input">
-      </div>
-
-      <div class="form-group" style="margin-bottom: 28px;">
-        <label class="form-label">Enfermedad Crónica</label>
-        <select name="enfermedad" class="form-input">
-          <option value="diabetes_t2">Diabetes Tipo 2</option>
-          <option value="diabetes_t1">Diabetes Tipo 1</option>
-          <option value="hipertension">Hipertensión Arterial</option>
-          <option value="asma">Asma</option>
-          <option value="epoc">EPOC</option>
-          <option value="irc">Insuficiencia Renal Crónica</option>
-          <option value="icc">Insuficiencia Cardíaca Crónica</option>
-          <option value="artritis">Artritis Reumatoide</option>
-          <option value="otra">Otra</option>
+      <div class="mb-7">
+        <label class="block text-[0.8rem] font-semibold text-text2 mb-1.75">Enfermedad Crónica</label>
+        <select name="enfermedad"
+                class="w-full px-3.5 py-2.5 bg-surface border-[1.5px] border-border text-text rounded-lg font-sans text-[0.9rem] outline-none transition-[border-color,box-shadow] duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(30,64,175,0.1)] appearance-auto">
+          <option value="diabetes_t2" {% if form_data.enfermedad == 'diabetes_t2' or not form_data %}selected{% endif %}>Diabetes Tipo 2</option>
+          <option value="diabetes_t1" {% if form_data.enfermedad == 'diabetes_t1' %}selected{% endif %}>Diabetes Tipo 1</option>
+          <option value="hipertension" {% if form_data.enfermedad == 'hipertension' %}selected{% endif %}>Hipertensión Arterial</option>
+          <option value="asma" {% if form_data.enfermedad == 'asma' %}selected{% endif %}>Asma</option>
+          <option value="epoc" {% if form_data.enfermedad == 'epoc' %}selected{% endif %}>EPOC</option>
+          <option value="irc" {% if form_data.enfermedad == 'irc' %}selected{% endif %}>Insuficiencia Renal Crónica</option>
+          <option value="icc" {% if form_data.enfermedad == 'icc' %}selected{% endif %}>Insuficiencia Cardíaca Crónica</option>
+          <option value="artritis" {% if form_data.enfermedad == 'artritis' %}selected{% endif %}>Artritis Reumatoide</option>
+          <option value="otra" {% if form_data.enfermedad == 'otra' %}selected{% endif %}>Otra</option>
         </select>
       </div>
 
-      <button type="submit" class="btn-primary" style="width: 100%; padding: 12px 20px; font-size: 0.9rem;">
+      <button type="submit" class="w-full bg-primary text-white border-0 px-5 py-3 rounded-lg font-bold text-[0.9rem] font-sans cursor-pointer transition-colors duration-200 hover:bg-primary-dark">
         Dar de Alta Paciente
       </button>
       <a href="{% url 'dashboard' %}"
-         style="display: block; text-align: center; margin-top: 14px; color: var(--muted); font-size: 0.82rem; text-decoration: none;">
+         class="block text-center mt-3.5 text-muted text-[0.82rem] no-underline hover:text-text transition-colors duration-150">
         Cancelar
       </a>
     </form>

@@ -1,136 +1,186 @@
 <!DOCTYPE html>
 <html>
-
 <head>
-    <style>
-        @page {
-            size: letter;
-            margin: 2cm;
-        }
+<meta charset="utf-8">
+<style>
+  @page { size: letter; margin: 0; }
 
-        body {
-            font-family: Helvetica, Arial, sans-serif;
-            color: #1a202c;
-            line-height: 1.4;
-        }
+  body {
+    font-family: Helvetica, Arial, sans-serif;
+    color: #0f172a; font-size: 10px; line-height: 1.4;
+    margin: 0; padding: 0;
+  }
 
-        .header {
-            text-align: center;
-            border-bottom: 2px solid #00c9b1;
-            padding-bottom: 10px;
-            margin-bottom: 20px;
-        }
+  .brand { font-size: 22px; font-weight: bold; color: #ffffff; margin: 0; }
+  .brand-tagline { font-size: 8px; color: #93c5fd; text-transform: uppercase; margin: 4px 0 0 0; }
+  .report-type { font-size: 11px; font-weight: bold; color: #ffffff; margin: 0; }
+  .report-date { font-size: 8px; color: #93c5fd; margin: 4px 0 0 0; }
 
-        .title {
-            font-size: 22px;
-            font-weight: bold;
-            color: #0f172a;
-            margin: 0;
-        }
+  .s-label { font-size: 10px; font-weight: bold; text-transform: uppercase; color: #64748b; margin: 0 0 4px 0; }
+  .s-value { font-size: 28px; font-weight: bold; color: #1e40af; margin: 0; line-height: 1; }
+  .s-value-alert { font-size: 28px; font-weight: bold; color: #dc2626; margin: 0; line-height: 1; }
+  .s-value-sm { font-size: 20px; font-weight: bold; color: #0f172a; margin: 0; line-height: 1; }
 
-        .subtitle {
-            font-size: 12px;
-            color: #64748b;
-            margin-top: 5px;
-        }
+  .section-title {
+    font-size: 9px; font-weight: bold; text-transform: uppercase;
+    color: #1e40af; border-bottom: 2px solid #1e40af;
+    padding-bottom: 4px; margin: 0 0 12px 0;
+  }
 
-        .summary-box {
-            background-color: #f8fafc;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 25px;
-        }
+  .tbl { width: 100%; border-collapse: collapse; }
+  .tbl th {
+    background-color: #1e40af; color: #ffffff;
+    font-size: 10px; font-weight: bold; text-transform: uppercase;
+    padding: 7px 10px; text-align: left;
+  }
+  .tbl td {
+    font-size: 9px; padding: 7px 10px;
+    border-bottom: 1px solid #e2e8f0; color: #334155; vertical-align: middle;
+  }
+  .bg-alt { background-color: #f8fafc; }
+  .td-num { color: #94a3b8; font-size: 8px; text-align: center; }
+  .td-name { font-weight: bold; color: #0f172a; }
+  .td-mono { font-family: Courier, monospace; font-weight: bold; color: #0f172a; }
+  .td-unit { font-size: 8px; color: #94a3b8; }
+  .td-muted{ font-size: 8px; color: #94a3b8; }
+  .ok { color: #16a34a; font-weight: bold; }
+  .alert { color: #dc2626; font-weight: bold; }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        th {
-            background-color: #0f172a;
-            color: white;
-            font-size: 10px;
-            padding: 10px;
-            text-align: left;
-            text-transform: uppercase;
-        }
-
-        td {
-            font-size: 10px;
-            padding: 10px;
-            border-bottom: 1px solid #e2e8f0;
-        }
-
-        .status-ok {
-            color: #2ed573;
-            font-weight: bold;
-        }
-
-        .status-alert {
-            color: #ff4757;
-            font-weight: bold;
-        }
-
-        .footer {
-            margin-top: 30px;
-            font-size: 9px;
-            color: #94a3b8;
-            text-align: center;
-        }
-    </style>
+  .footer-p { font-size: 7px; color: #94a3b8; margin: 0 0 3px 0; }
+  .footer-brand { font-size: 9px; font-weight: bold; color: #64748b; margin: 0 0 2px 0; }
+</style>
 </head>
-
 <body>
-    <div class="header">
-        <p class="title">CRONICCARE - REPORTE DE RED</p>
-        <p class="subtitle">Consolidado de Telemonitoreo de Pacientes Crónicos</p>
-    </div>
 
-    <div class="summary-box">
-        <p style="font-size: 12px; margin: 0;"><strong>Fecha de emisión:</strong> {% now "d/m/Y H:i" %}</p>
-        <p style="font-size: 12px; margin: 5px 0 0 0;"><strong>Total Pacientes en Red:</strong> {{ pacientes.count }}
-        </p>
-    </div>
+<table style="width: 100%; background-color: #1e40af;" cellpadding="0" cellspacing="0">
+  <tr>
+    <td style="width: 60%; padding: 14px 28px; vertical-align: middle;">
+      <p class="brand" style="margin: 0; padding: 0; line-height: 1.1;">CronicCare</p>
+      <p class="brand-tagline" style="margin: 3px 0 0 0; padding: 0; line-height: 1.1;">Sistema de Telemonitoreo de Pacientes Crónicos</p>
+    </td>
+    <td style="width: 40%; padding: 14px 28px; vertical-align: middle; text-align: right;">
+      <p class="report-type" style="margin: 0; padding: 0; line-height: 1.1;">Reporte General de Red</p>
+      <p class="report-date" style="margin: 3px 0 0 0; padding: 0; line-height: 1.1;">Generado el {% now "d/m/Y" %} a las {% now "H:i" %}</p>
+    </td>
+  </tr>
+</table>
 
-    <table>
+<table style="width: 100%; background-color: #1d4ed8;" cellpadding="0" cellspacing="0">
+  <tr><td style="width: 100%; height: 4px; font-size: 1px; line-height: 1;">&nbsp;</td></tr>
+</table>
+
+<table style="width: 100%;" cellpadding="0" cellspacing="0">
+  <tr>
+    <td style="width: 5%;">&nbsp;</td>
+    <td style="width: 90%; padding-top: 20px; padding-bottom: 24px;">
+      <table style="width: 100%;" cellpadding="0" cellspacing="0">
+        <tr>
+          <td style="width: 32%; background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 6px 12px; vertical-align: middle;">
+            <p class="s-label">Total pacientes en red</p>
+            <p class="s-value">{{ pacientes.count }}</p>
+            <p style="font-size: 9px; color: #94a3b8; margin: 3px 0 0 0; line-height: 1;">en seguimiento activo</p>
+          </td>
+          <td style="width: 2%;">&nbsp;</td>
+          <td style="width: 32%; background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 6px 12px; vertical-align: middle;">
+            <p class="s-label">Fecha de emisión</p>
+            <p class="s-value-sm">{% now "d/m/Y" %}</p>
+            <p style="font-size: 9px; color: #94a3b8; margin: 3px 0 0 0; line-height: 1;">{% now "H:i" %} hrs</p>
+          </td>
+          <td style="width: 2%;">&nbsp;</td>
+          <td style="width: 32%; background-color: #fef2f2; border: 1px solid #fecaca; padding: 6px 12px; vertical-align: middle;">
+            <p class="s-label" style="color: #ef4444;">Pacientes en alerta</p>
+            <p class="s-value-alert">{{ pacientes_en_alerta }}</p>
+            <p style="font-size: 9px; color: #f87171; margin: 3px 0 0 0; line-height: 1;">requieren atención</p>
+          </td>
+        </tr>
+      </table>
+
+      <table style="width: 100%;" cellpadding="0" cellspacing="0">
+        <tr><td style="width: 100%; height: 16px; font-size: 1px; line-height: 1;">&nbsp;</td></tr>
+      </table>
+
+      <p class="section-title">Listado completo de pacientes</p>
+
+      <table class="tbl" cellpadding="0" cellspacing="0">
         <thead>
-            <tr>
-                <th>Paciente</th>
-                <th>DNI</th>
-                <th>Diagnóstico</th>
-                <th>Última Lectura</th>
-                <th>Estado</th>
-            </tr>
+          <tr>
+            <th style="width: 4%;">#</th>
+            <th style="width: 24%;">Paciente</th>
+            <th style="width: 10%;">DNI</th> 
+            <th style="width: 20%;">Diagnóstico</th>
+            <th style="width: 10%;">Alta</th>
+            <th style="width: 18%;">Última Medición</th>
+            <th style="width: 14%;">Estado</th>
+          </tr>
         </thead>
         <tbody>
-            {% for p in pacientes %}
-            <tr>
-                <td><strong>{{ p.nombre|upper }}</strong></td>
-                <td>{{ p.dni }}</td>
-                <td>{{ p.enfermedad }}</td>
-                <td>
-                    {% with ultima=p.metricas.last %}
-                    {% if ultima %}{{ ultima.valor }}{% else %}N/A{% endif %}
-                    {% endwith %}
-                </td>
-                <td>
-                    {% with ultima=p.metricas.last %}
-                    {% if ultima.alerta %}
-                    <span class="status-alert">ALERTA</span>
-                    {% else %}
-                    <span class="status-ok">ESTABLE</span>
-                    {% endif %}
-                    {% endwith %}
-                </td>
-            </tr>
-            {% endfor %}
+          {% for p in pacientes %}
+          <tr {% if forloop.counter|divisibleby:2 %}class="bg-alt"{% endif %}>
+            <td class="td-num">{{ forloop.counter }}</td>
+            <td class="td-name">{{ p.nombre }}</td>
+            <td class="td-mono">{{ p.dni }}</td>
+            <td>{{ p.get_enfermedad_display }}</td>
+            <td>{{ p.fecha_registro|date:"d/m/Y" }}</td>
+            <td>
+              {% with ultima=p.metricas.last %}
+              {% if ultima %}
+                <span class="td-mono">{{ ultima.valor }}</span>
+                <span class="td-unit">
+                  {% if ultima.tipo == 'glucosa' %}mg/dL
+                  {% elif ultima.tipo == 'presion' %}mmHg
+                  {% elif ultima.tipo == 'saturacion' %}%
+                  {% elif ultima.tipo == 'frecuencia' %}lpm
+                  {% endif %}
+                </span>
+                <br><span class="td-muted">{{ ultima.get_tipo_display }}</span>
+              {% else %}
+                <span class="td-muted">Sin datos</span>
+              {% endif %}
+              {% endwith %}
+            </td>
+            <td>
+              {% with ultima=p.metricas.last %}
+              {% if ultima and ultima.alerta %}
+                <span class="alert">&#9679; Alerta</span>
+              {% else %}
+                <span class="ok">&#9679; Estable</span>
+              {% endif %}
+              {% endwith %}
+            </td>
+          </tr>
+          {% endfor %}
         </tbody>
-    </table>
+      </table>
 
-    <div class="footer">
-        <p>Este documento es un reporte generado automáticamente por el sistema CronicCare.</p>
-        <p>Página 1 de 1</p>
-    </div>
+      <table style="width: 100%;" cellpadding="0" cellspacing="0">
+        <tr><td style="width: 100%; height: 28px; font-size: 1px; line-height: 1;">&nbsp;</td></tr>
+      </table>
+
+     <table style="width: 100%; border-top: 1px solid #e2e8f0; margin-top: 5px;" cellpadding="0" cellspacing="0">
+      <tr>
+        <td style="width: 70%; padding-top: 10px; vertical-align: top;">
+          <div style="font-size: 7px; color: #94a3b8; margin: 0; padding: 0; line-height: 9px;">
+            Documento generado automáticamente por el sistema CronicCare. Uso exclusivo del equipo médico autorizado.
+          </div>
+          <div style="font-size: 7px; color: #94a3b8; margin: 0; padding: 0; line-height: 9px;">
+            Información confidencial protegida por normativas de privacidad médica.
+          </div>
+        </td>
+        <td style="width: 30%; padding-top: 10px; text-align: right; vertical-align: top;">
+          <div style="font-size: 9px; font-weight: bold; color: #64748b; margin: 0; padding: 0; line-height: 11px;">
+            CronicCare
+          </div>
+          <div style="font-size: 7px; color: #94a3b8; margin: 0; padding: 0; line-height: 9px;">
+            Telemonitoreo Clínico
+          </div>
+        </td>
+      </tr>
+     </table>
+
+    </td>
+    <td style="width: 5%;">&nbsp;</td>
+  </tr>
+</table>
+
 </body>
-
 </html>

@@ -1,0 +1,52 @@
+@import "tailwindcss";
+@source "../../**/*.html";
+@source "../../**/*.py";
+
+@theme {
+  --color-primary: #1e40af;
+  --color-primary-dark: #1d4ed8;
+  --color-primary-light: #eff6ff;
+  --color-ok: #16a34a;
+  --color-ok-light: #dcfce7;
+  --color-alert: #dc2626;
+  --color-alert-light: #fee2e2;
+  --color-warning: #d97706;
+  --color-warning-light: #fef3c7;
+  --color-surface: #ffffff;
+  --color-bg: #f8fafc;
+  --color-muted: #64748b;
+  --color-border: #e2e8f0;
+  --color-text: #0f172a;
+  --color-text2: #334155;
+  --font-sans: "Inter", sans-serif;
+}
+
+@layer components {
+  @media (max-width: 768px) {
+    #sidebar {
+      transform: translateX(-100%);
+      transition: transform 0.25s ease;
+    }
+    #sidebar.open {
+      transform: translateX(0);
+    }
+    .sidebar-overlay.open {
+      display: block;
+    }
+  }
+
+  .modal-bg { display: none; }
+  .modal-bg.open { display: flex; }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  @keyframes parpadear {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    25%, 75%  { opacity: 0.3; transform: scale(1.15); }
+  }
+  .parpadear { animation: parpadear 1s ease 3; }
+}

@@ -1,8 +1,9 @@
 import re
 import secrets
-import random
 from datetime import timedelta, date
+from django.core.paginator import Paginator
 from django.utils import timezone
+from django.db import transaction
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -19,32 +20,6 @@ def es_medico(user):
 
 medico_required = user_passes_test(es_medico, login_url='sin_permiso')
 
-
-def calcular_estado_paciente(paciente):
-    ahora = timezone.now()
-    ultimas_24h = ahora - timedelta(hours=24)
-    ultimas_48h = ahora - timedelta(hours=48)
-
-    alerta_critica = Alerta.objects.filter(
-        paciente=paciente,
-        resuelta=False,
-        criticidad='critica',
-        fecha__gte=ultimas_24h,
-    ).exists()
-
-    if alerta_critica:
-        return 'critico'
-
-    metricas_alerta = Metrica.objects.filter(
-        paciente=paciente,
-        alerta=True,
-        fecha__gte=ultimas_48h,
-    ).count()
-
-    if metricas_alerta >= 2:
-        return 'riesgo'
-
-    return 'estable'
 
 
 def registrar_log(request, accion, paciente=None, descripcion=''):
@@ -65,25 +40,49 @@ def registrar_log(request, accion, paciente=None, descripcion=''):
 @login_required
 @medico_required
 def dashboard_medico(request):
-    pacientes = Paciente.objects.all()
+    from django.db.models import Prefetch
+    pacientes = Paciente.objects.prefetch_related(
+        Prefetch('metricas', queryset=Metrica.objects.order_by('-fecha')),
+        Prefetch('alertas', queryset=Alerta.objects.filter(resuelta=False)),
+    )
     alertas_criticas = Alerta.objects.filter(resuelta=False, criticidad='critica').count()
+
+    ahora = timezone.now()
+    ultimas_24h = ahora - timedelta(hours=24)
+    ultimas_48h = ahora - timedelta(hours=48)
 
     pacientes_list = []
     for p in pacientes:
-        estado = calcular_estado_paciente(p)
+        alertas_p = [a for a in p.alertas.all() if a.criticidad == 'critica' and a.fecha >= ultimas_24h]
+        metricas_p = list(p.metricas.all())
+        metricas_alerta = [m for m in metricas_p if m.alerta and m.fecha >= ultimas_48h]
+
+        if alertas_p:
+            estado = 'critico'
+        elif len(metricas_alerta) >= 2:
+            estado = 'riesgo'
+        else:
+            estado = 'estable'
+
         pacientes_list.append({
             'paciente': p,
             'estado': estado,
-            'ultima_metrica': p.metricas.last(),
+            'ultima_metrica': metricas_p[0] if metricas_p else None,
         })
 
     pacientes_seguros = sum(1 for item in pacientes_list if item['estado'] == 'estable')
+    pacientes_riesgo = sum(1 for item in pacientes_list if item['estado'] == 'riesgo')
+
+    paginator = Paginator(pacientes_list, 10)
+    page_obj = paginator.get_page(request.GET.get('page', 1))
 
     return render(request, 'core/dashboard.html', {
         'pacientes': pacientes,
-        'pacientes_list': pacientes_list,
+        'pacientes_list': page_obj,
+        'page_obj': page_obj,
         'alertas_count': alertas_criticas,
         'pacientes_seguros': pacientes_seguros,
+        'pacientes_riesgo': pacientes_riesgo,
     })
 
 
@@ -150,22 +149,6 @@ def detalle_paciente(request, paciente_id):
             )
             messages.success(request, 'Ítem eliminado del plan.')
 
-        else:
-            texto = request.POST.get('nota_texto', '').strip()
-            if texto:
-                NotaClinica.objects.create(
-                    paciente=paciente,
-                    medico=request.user,
-                    texto=texto,
-                )
-                registrar_log(
-                    request,
-                    accion='agregar_nota',
-                    paciente=paciente,
-                    descripcion=f"Nota: {texto[:50]}...",
-                )
-                messages.success(request, 'Nota clínica agregada correctamente.')
-
         return redirect('detalle_paciente', paciente_id=paciente_id)
 
     registrar_log(
@@ -175,12 +158,12 @@ def detalle_paciente(request, paciente_id):
         descripcion=f"Accedió a la ficha de {paciente.nombre}",
     )
 
-    estado_paciente = calcular_estado_paciente(paciente)
+    estado_paciente = paciente.calcular_estado()
     metricas = paciente.metricas.all().order_by('-fecha')
     notas = paciente.notas.select_related('medico').all()
     planes = paciente.planes.filter(activo=True)
 
-    ultima_metrica   = metricas.first()
+    ultima_metrica = metricas.first()
     ultima_valor_str = f"{float(ultima_metrica.valor):.1f}" if ultima_metrica else None
 
     metricas_formateadas = []
@@ -189,6 +172,24 @@ def detalle_paciente(request, paciente_id):
             'metrica': m,
             'valor_str': f"{float(m.valor):.1f}",
             'fecha_str': m.fecha.strftime('%d/%m/%y %H:%M'),
+        })
+
+    TIPOS_DISPLAY = [
+        ('glucosa', 'Glucosa', 'mg/dL'),
+        ('presion', 'Presión Arterial', 'mmHg'),
+        ('saturacion', 'Saturación O₂', '%'),
+        ('frecuencia', 'Frec. Cardíaca', 'lpm'),
+    ]
+    ultimas_por_tipo = []
+    for tipo, label, unidad in TIPOS_DISPLAY:
+        m = paciente.metricas.filter(tipo=tipo).order_by('-fecha').first()
+        ultimas_por_tipo.append({
+            'tipo': tipo,
+            'label': label,
+            'unidad': unidad,
+            'valor_str': f"{float(m.valor):.1f}" if m else None,
+            'alerta': m.alerta if m else False,
+            'fecha_str': m.fecha.strftime('%d/%m %H:%M') if m else None,
         })
 
     periodo = request.GET.get('periodo', '10')
@@ -207,7 +208,7 @@ def detalle_paciente(request, paciente_id):
         metricas_grafica = list(paciente.metricas.order_by('-fecha')[:10])[::-1]
         periodo_label = 'Últimas 10 mediciones'
 
-    labels  = [m.fecha.strftime('%d/%m %H:%M') for m in metricas_grafica]
+    labels = [m.fecha.strftime('%d/%m %H:%M') for m in metricas_grafica]
     valores = [float(m.valor) for m in metricas_grafica]
     alertas = [m.alerta for m in metricas_grafica]
 
@@ -217,6 +218,7 @@ def detalle_paciente(request, paciente_id):
         'metricas': metricas,
         'metricas_formateadas': metricas_formateadas,
         'ultima_valor_str': ultima_valor_str,
+        'ultimas_por_tipo': ultimas_por_tipo,
         'notas': notas,
         'planes': planes,
         'chart_labels':  labels,
@@ -241,11 +243,29 @@ def exportar_pdf_paciente(request, paciente_id):
         descripcion=f"PDF individual generado para {paciente.nombre}",
     )
 
-    template_path = 'core/reportes/reporte_pdf.html'
-    context = {'paciente': paciente, 'metricas': metricas}
+    TIPOS_DISPLAY = [
+        ('glucosa', 'Glucosa', 'mg/dL'),
+        ('presion', 'Presión Arterial','mmHg'),
+        ('saturacion', 'Saturación O2', '%'),
+        ('frecuencia', 'Frec. Cardíaca', 'lpm'),
+    ]
+    ultimas_por_tipo = []
+    for tipo, label, unidad in TIPOS_DISPLAY:
+        m = paciente.metricas.filter(tipo=tipo).order_by('-fecha').first()
+        ultimas_por_tipo.append({
+            'tipo': tipo, 'label': label, 'unidad': unidad,
+            'valor_str': f"{float(m.valor):.1f}" if m else None,
+            'alerta': m.alerta if m else False,
+            'fecha_str': m.fecha.strftime('%d/%m %H:%M') if m else None,
+        })
 
+    template_path = 'core/reportes/reporte_pdf.html'
+    context = {'paciente': paciente, 'metricas': metricas, 'ultimas_por_tipo': ultimas_por_tipo}
+
+    nombre_slug = re.sub(r'[^a-z0-9]+', '_', paciente.nombre.lower().strip()).strip('_')
+    filename = f"reporte_croniccare_{nombre_slug}_{paciente.dni}.pdf"
     response = HttpResponse(content_type='application/pdf')
-    response['Content-Disposition'] = f'attachment; filename="Reporte_{paciente.dni}.pdf"'
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
 
     template = get_template(template_path)
     html = template.render(context)
@@ -266,11 +286,13 @@ def reporte_general_pdf(request):
         descripcion="Reporte general PDF generado",
     )
     pacientes = Paciente.objects.all()
+    pacientes_en_alerta = Paciente.objects.filter(alertas__resuelta=False, alertas__criticidad='critica').distinct().count()
     template_path = 'core/reportes/reporte_general_pdf.html'
-    context = {'pacientes': pacientes}
+    context = {'pacientes': pacientes, 'pacientes_en_alerta': pacientes_en_alerta}
 
+    fecha_str = timezone.localdate().strftime('%Y%m%d')
     response = HttpResponse(content_type='application/pdf')
-    response['Content-Disposition'] = 'attachment; filename="Reporte_General_CronicCare.pdf"'
+    response['Content-Disposition'] = f'attachment; filename="reporte_croniccare_general_{fecha_str}.pdf"'
 
     template = get_template(template_path)
     html = template.render(context)
@@ -280,58 +302,6 @@ def reporte_general_pdf(request):
         return HttpResponse('Error al generar el reporte', status=500)
     return response
 
-
-@login_required
-def simular_metrica(request, paciente_id):
-    if request.method != 'POST':
-        return redirect('dashboard')
-    paciente = get_object_or_404(Paciente, id=paciente_id)
-
-    if paciente.enfermedad == 'diabetes_t2':
-        tipo = 'glucosa'
-        valor_simulado = round(random.uniform(80, 200), 1)
-        umbral_alerta = 126
-        es_alerta = valor_simulado > umbral_alerta
-        unidad = 'mg/dL'
-        nombre_metrica = 'Glucosa'
-    elif paciente.enfermedad == 'hipertension':
-        tipo = 'presion'
-        valor_simulado = round(random.uniform(100, 180), 1)
-        umbral_alerta = 140
-        es_alerta = valor_simulado > umbral_alerta
-        unidad = 'mmHg'
-        nombre_metrica = 'Presión arterial'
-    else:  # asma
-        tipo = 'saturacion'
-        valor_simulado = round(random.uniform(85, 100), 1)
-        umbral_alerta = 90
-        es_alerta = valor_simulado < umbral_alerta
-        unidad = '%'
-        nombre_metrica = 'Saturación O2'
-
-    metrica = Metrica.objects.create(
-        paciente=paciente,
-        tipo=tipo,
-        valor=valor_simulado,
-        alerta=es_alerta,
-    )
-
-    if es_alerta:
-        Alerta.objects.create(
-            paciente=paciente,
-            metrica=metrica,
-            mensaje=f'{nombre_metrica} en {valor_simulado:.1f} {unidad} — fuera del rango seguro (umbral: {umbral_alerta} {unidad})',
-            criticidad='critica',
-        )
-
-    registrar_log(
-        request,
-        accion='simular_metrica',
-        paciente=paciente,
-        descripcion=f"Métrica simulada: {tipo} = {valor_simulado}",
-    )
-
-    return redirect('dashboard')
 
 
 @login_required
@@ -374,8 +344,46 @@ def resolver_alerta(request, alerta_id):
 @login_required
 @medico_required
 def conteo_alertas_json(request):
-    total = Alerta.objects.filter(resuelta=False, criticidad='critica').count()
-    return JsonResponse({'criticas': total})
+    from django.utils import timezone
+    from datetime import timedelta
+
+    ahora = timezone.now()
+    ultimas_24h = ahora - timedelta(hours=24)
+    ultimas_48h = ahora - timedelta(hours=48)
+
+    pacientes = Paciente.objects.prefetch_related(
+        'metricas', 'alertas'
+    )
+
+    total = 0
+    estables = 0
+    observacion = 0
+    criticas = Alerta.objects.filter(resuelta=False, criticidad='critica').count()
+
+    for p in pacientes:
+        total += 1
+        alertas_p = [a for a in p.alertas.all() if not a.resuelta and a.criticidad == 'critica' and a.fecha >= ultimas_24h]
+        metricas_p = list(p.metricas.all())
+        metricas_alerta = [m for m in metricas_p if m.alerta and m.fecha >= ultimas_48h]
+
+        if alertas_p:
+            estado = 'critico'
+        elif len(metricas_alerta) >= 2:
+            estado = 'riesgo'
+        else:
+            estado = 'estable'
+
+        if estado == 'estable':
+            estables += 1
+        elif estado == 'riesgo':
+            observacion += 1
+
+    return JsonResponse({
+        'total': total,
+        'estables': estables,
+        'observacion': observacion,
+        'criticas': criticas,
+    })
 
 
 @login_required
@@ -386,42 +394,46 @@ def registrar_paciente(request):
         dni = request.POST.get('dni')
         enfermedad = request.POST.get('enfermedad')
 
+        form_data = {
+            'nombre': nombre or '',
+            'dni': dni or '',
+            'fecha_nacimiento': request.POST.get('fecha_nacimiento', ''),
+            'telefono': request.POST.get('telefono', ''),
+            'enfermedad': enfermedad or 'diabetes_t2',
+        }
+
+        def render_error(msg):
+            messages.error(request, msg)
+            return render(request, 'core/registro.html', {'form_data': form_data})
+
         if not nombre or not dni:
-            messages.error(request, 'Nombre y DNI son obligatorios.')
-            return render(request, 'core/registro.html')
+            return render_error('Nombre y DNI son obligatorios.')
         if not re.match(r'^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$', nombre):
-            messages.error(request,
-                'El nombre solo puede contener letras y espacios, sin caracteres especiales.')
-            return render(request, 'core/registro.html')
+            return render_error('El nombre solo puede contener letras y espacios, sin caracteres especiales.')
         if not dni.isdigit() or len(dni) != 8:
-            messages.error(request, 'El DNI debe contener exactamente 8 dígitos numéricos.')
-            return render(request, 'core/registro.html')
-
+            return render_error('El DNI debe contener exactamente 8 dígitos numéricos.')
         if Paciente.objects.filter(dni=dni).exists():
-            messages.error(request, f"El DNI {dni} ya está registrado en el sistema.")
-            return render(request, 'core/registro.html')
-
+            return render_error(f"El DNI {dni} ya está registrado en el sistema.")
         if User.objects.filter(username=dni).exists():
-            messages.error(request, f"Ya existe un usuario con el DNI {dni}.")
-            return render(request, 'core/registro.html')
+            return render_error(f"Ya existe un usuario con el DNI {dni}.")
 
         password_temp = secrets.token_urlsafe(8)
-        user = User.objects.create_user(username=dni, password=password_temp)
-
-        grupo_paciente, _ = Group.objects.get_or_create(name='Paciente')
-        user.groups.add(grupo_paciente)
-
         fecha_nac = request.POST.get('fecha_nacimiento')
         telefono = request.POST.get('telefono', '').strip()
-        paciente = Paciente.objects.create(
-            user=user,
-            nombre=nombre,
-            dni=dni,
-            enfermedad=enfermedad,
-            fecha_nacimiento=fecha_nac if fecha_nac else None,
-            telefono=telefono,
-        )
-        FichaMedica.objects.create(paciente=paciente)
+
+        with transaction.atomic():
+            user = User.objects.create_user(username=dni, password=password_temp)
+            grupo_paciente, _ = Group.objects.get_or_create(name='Paciente')
+            user.groups.add(grupo_paciente)
+            paciente = Paciente.objects.create(
+                user=user,
+                nombre=nombre,
+                dni=dni,
+                enfermedad=enfermedad,
+                fecha_nacimiento=fecha_nac if fecha_nac else None,
+                telefono=telefono,
+            )
+            FichaMedica.objects.create(paciente=paciente)
 
         registrar_log(
             request,
@@ -462,14 +474,14 @@ def perfil_medico(request):
 
         if accion == 'actualizar_perfil':
             user.first_name = request.POST.get('first_name', '').strip()
-            user.last_name  = request.POST.get('last_name', '').strip()
-            user.email      = request.POST.get('email', '').strip()
+            user.last_name = request.POST.get('last_name', '').strip()
+            user.email = request.POST.get('email', '').strip()
             user.save()
 
             perfil.especialidad = request.POST.get('especialidad', 'medicina_general')
-            perfil.cmp          = request.POST.get('cmp', '').strip()
-            perfil.telefono     = request.POST.get('telefono', '').strip()
-            perfil.bio          = request.POST.get('bio', '').strip()
+            perfil.cmp = request.POST.get('cmp', '').strip()
+            perfil.telefono = request.POST.get('telefono', '').strip()
+            perfil.bio = request.POST.get('bio', '').strip()
             perfil.save()
 
             registrar_log(
@@ -481,8 +493,8 @@ def perfil_medico(request):
             return redirect('perfil_medico')
 
         elif accion == 'cambiar_password':
-            password_actual  = request.POST.get('password_actual')
-            password_nueva   = request.POST.get('password_nueva')
+            password_actual = request.POST.get('password_actual')
+            password_nueva = request.POST.get('password_nueva')
             password_confirm = request.POST.get('password_confirm')
 
             if not user.check_password(password_actual):
@@ -521,18 +533,18 @@ def ficha_medica(request, paciente_id):
             paciente.telefono = request.POST.get('telefono', '').strip()
             paciente.save()
 
-            ficha.tipo_sangre               = request.POST.get('tipo_sangre', '')
+            ficha.tipo_sangre = request.POST.get('tipo_sangre', '')
             peso = request.POST.get('peso_kg')
             talla = request.POST.get('talla_cm')
-            ficha.peso_kg                   = float(peso) if peso else None
-            ficha.talla_cm                  = float(talla) if talla else None
-            ficha.alergias                  = request.POST.get('alergias', '').strip()
-            ficha.cirugias_previas          = request.POST.get('cirugias_previas', '').strip()
-            ficha.hospitalizaciones         = request.POST.get('hospitalizaciones', '').strip()
-            ficha.antecedentes_familiares   = request.POST.get('antecedentes_familiares', '').strip()
-            ficha.historia_enfermedad       = request.POST.get('historia_enfermedad', '').strip()
+            ficha.peso_kg = float(peso) if peso else None
+            ficha.talla_cm = float(talla) if talla else None
+            ficha.alergias = request.POST.get('alergias', '').strip()
+            ficha.cirugias_previas = request.POST.get('cirugias_previas', '').strip()
+            ficha.hospitalizaciones = request.POST.get('hospitalizaciones', '').strip()
+            ficha.antecedentes_familiares = request.POST.get('antecedentes_familiares', '').strip()
+            ficha.historia_enfermedad = request.POST.get('historia_enfermedad', '').strip()
             ficha.contacto_emergencia_nombre = request.POST.get('contacto_emergencia_nombre', '').strip()
-            ficha.contacto_emergencia_tel   = request.POST.get('contacto_emergencia_tel', '').strip()
+            ficha.contacto_emergencia_tel = request.POST.get('contacto_emergencia_tel', '').strip()
             ficha.save()
 
             registrar_log(request, accion='ver_paciente', paciente=paciente,
@@ -540,8 +552,8 @@ def ficha_medica(request, paciente_id):
             messages.success(request, 'Ficha médica actualizada correctamente.')
 
         elif accion == 'agregar_prescripcion':
-            medicamento  = request.POST.get('medicamento', '').strip()
-            dosis        = request.POST.get('dosis', '').strip()
+            medicamento = request.POST.get('medicamento', '').strip()
+            dosis = request.POST.get('dosis', '').strip()
             fecha_inicio = request.POST.get('fecha_inicio')
             if medicamento and dosis and fecha_inicio:
                 fecha_fin = request.POST.get('fecha_fin') or None
@@ -587,28 +599,28 @@ def ficha_medica(request, paciente_id):
     prescripciones_pasadas = paciente.prescripciones.filter(activa=False).select_related('medico')
 
     return render(request, 'core/ficha_medica.html', {
-        'paciente':               paciente,
-        'ficha':                  ficha,
+        'paciente': paciente,
+        'ficha': ficha,
         'prescripciones_activas': prescripciones_activas,
         'prescripciones_pasadas': prescripciones_pasadas,
-        'umbrales':               umbrales,
-        'tipos_metrica':          UmbralPersonalizado.TIPOS_METRICA,
-        'today':                  date.today().isoformat(),
-        'vias':                   Prescripcion.VIAS,
-        'frecuencias_presc':      Prescripcion.FRECUENCIAS,
+        'umbrales': umbrales,
+        'tipos_metrica': UmbralPersonalizado.TIPOS_METRICA,
+        'today': date.today().isoformat(),
+        'vias': Prescripcion.VIAS,
+        'frecuencias_presc': Prescripcion.FRECUENCIAS,
     })
 
 
 @login_required
 @medico_required
 def agenda(request):
-    hoy = date.today()
+    hoy = timezone.localdate()
 
     if request.method == 'POST':
         paciente_id  = request.POST.get('paciente_id')
-        tipo         = request.POST.get('tipo', 'control')
-        fecha_hora   = request.POST.get('fecha_hora')
-        motivo       = request.POST.get('motivo', '').strip()
+        tipo = request.POST.get('tipo', 'control')
+        fecha_hora = request.POST.get('fecha_hora')
+        motivo = request.POST.get('motivo', '').strip()
 
         if paciente_id and fecha_hora and motivo:
             paciente = get_object_or_404(Paciente, pk=paciente_id)
@@ -630,23 +642,55 @@ def agenda(request):
                 .order_by('fecha_hora'))
 
     hoy_citas = proximas.filter(fecha_hora__date=hoy)
-    semana_citas = proximas.filter(fecha_hora__date__gt=hoy)[:20]
 
-    recientes = (Consulta.objects
-                 .filter(estado='realizada')
-                 .select_related('paciente')
-                 .order_by('-fecha_hora')[:10])
+    proximas_qs = proximas.filter(fecha_hora__date__gt=hoy)
+    proximas_pag = Paginator(proximas_qs, 10)
+    proximas_page = proximas_pag.get_page(request.GET.get('pp', 1))
+
+    recientes_qs = (Consulta.objects
+                    .filter(estado='realizada')
+                    .select_related('paciente')
+                    .order_by('-fecha_hora'))
+    recientes_pag = Paginator(recientes_qs, 10)
+    recientes_page = recientes_pag.get_page(request.GET.get('rp', 1))
+
+    semana_citas = proximas_page
 
     pacientes = Paciente.objects.all().order_by('nombre')
 
+    semana_inicio = hoy - timedelta(days=hoy.weekday())
+    semana_fin = semana_inicio + timedelta(days=6)
+    citas_cal = list(
+        Consulta.objects
+        .filter(fecha_hora__date__gte=semana_inicio, fecha_hora__date__lte=semana_fin)
+        .select_related('paciente')
+        .order_by('fecha_hora')
+    )
+    DIAS_ES = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
+    dias_semana = [
+        {
+            'fecha': semana_inicio + timedelta(days=i),
+            'nombre': DIAS_ES[i],
+            'citas': [c for c in citas_cal if c.fecha_hora.date() == semana_inicio + timedelta(days=i)],
+            'es_hoy': semana_inicio + timedelta(days=i) == hoy,
+            'pasado': semana_inicio + timedelta(days=i) < hoy,
+        }
+        for i in range(7)
+    ]
+
     return render(request, 'core/agenda.html', {
-        'hoy':          hoy,
-        'hoy_citas':    hoy_citas,
+        'hoy': hoy,
+        'hoy_citas': hoy_citas,
         'semana_citas': semana_citas,
-        'recientes':    recientes,
-        'pacientes':    pacientes,
-        'tipos':        Consulta.TIPOS,
-        'today':        hoy.isoformat(),
+        'proximas_page': proximas_page,
+        'recientes': recientes_page,
+        'recientes_page': recientes_page,
+        'pacientes': pacientes,
+        'tipos': Consulta.TIPOS,
+        'today': hoy.isoformat(),
+        'dias_semana': dias_semana,
+        'semana_inicio': semana_inicio,
+        'semana_fin': semana_fin,
     })
 
 
@@ -659,13 +703,14 @@ def completar_consulta(request, consulta_id):
     consulta = get_object_or_404(Consulta, pk=consulta_id)
     consulta.diagnostico  = request.POST.get('diagnostico', '').strip()
     consulta.indicaciones = request.POST.get('indicaciones', '').strip()
-    proxima   = request.POST.get('proxima_cita')
+    proxima = request.POST.get('proxima_cita')
     consulta.proxima_cita = proxima if proxima else None
-    consulta.estado       = 'realizada'
+    consulta.estado = 'realizada'
     consulta.save()
 
     registrar_log(request, accion='ver_paciente', paciente=consulta.paciente,
                   descripcion=f'Consulta completada: {consulta.get_tipo_display()}')
+    
     messages.success(request, 'Consulta registrada correctamente.')
     return redirect('agenda')
 

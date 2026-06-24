@@ -1,85 +1,223 @@
 <!DOCTYPE html>
 <html>
-
 <head>
-    <style>
-        body {
-            font-family: Helvetica, sans-serif;
-            color: #333;
-        }
+<meta charset="utf-8">
+<style>
+  @page { size: letter; margin: 0; }
 
-        .header {
-            text-align: center;
-            border-bottom: 2px solid #00c9b1;
-            padding-bottom: 10px;
-        }
+  body {
+    font-family: Helvetica, Arial, sans-serif;
+    color: #0f172a; font-size: 10px; line-height: 1.4;
+    margin: 0; padding: 0;
+  }
 
-        .info {
-            margin: 20px 0;
-        }
+  .brand { font-size: 22px; font-weight: bold; color: #ffffff; margin: 0; }
+  .brand-tagline { font-size: 8px; color: #93c5fd; text-transform: uppercase; margin: 4px 0 0 0; }
+  .report-type { font-size: 11px; font-weight: bold; color: #ffffff; margin: 0; }
+  .report-date { font-size: 8px; color: #93c5fd; margin: 4px 0 0 0; }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
+  .meta-label { font-size: 7px; font-weight: bold; text-transform: uppercase; color: #64748b; margin: 0 0 2px 0; line-height: 1; }
+  .meta-val  { font-size: 10px; font-weight: bold; color: #0f172a; margin: 0; line-height: 1.2; }
 
-        th {
-            background-color: #f2f2f2;
-            font-size: 10px;
-            padding: 8px;
-            border: 1px solid #ddd;
-        }
+  .kpi-label { font-size: 7px; font-weight: bold; text-transform: uppercase; color: #64748b; margin: 0 0 3px 0; line-height: 1; }
+  .kpi-value { font-size: 22px; font-weight: bold; color: #1e40af; margin: 0; line-height: 1; }
+  .kpi-value-alt { font-size: 22px; font-weight: bold; color: #dc2626; margin: 0; line-height: 1; }
+  .kpi-unit { font-size: 8px; color: #64748b; font-weight: normal; }
+  .kpi-date { font-size: 7px; color: #94a3b8; margin: 3px 0 0 0; line-height: 1; }
 
-        td {
-            font-size: 10px;
-            padding: 8px;
-            border: 1px solid #ddd;
-            text-align: center;
-        }
+  .section-title {
+    font-size: 9px; font-weight: bold; text-transform: uppercase;
+    color: #1e40af; border-bottom: 2px solid #1e40af;
+    padding-bottom: 4px; margin: 0 0 10px 0;
+  }
 
-        .alerta {
-            color: red;
-            font-weight: bold;
-        }
-    </style>
+  .tbl { width: 100%; border-collapse: collapse; }
+  .tbl th {
+    background-color: #1e40af; color: #ffffff;
+    font-size: 10px; font-weight: bold; text-transform: uppercase;
+    padding: 7px 10px; text-align: left;
+  }
+  .tbl td {
+    font-size: 9px; padding: 7px 10px;
+    border-bottom: 1px solid #e2e8f0; color: #334155; vertical-align: middle;
+  }
+  .bg-alt { background-color: #f8fafc; }
+  .td-mono { font-family: Courier, monospace; font-weight: bold; color: #0f172a; }
+  .td-unit { font-size: 8px; color: #94a3b8; }
+  .td-muted { font-size: 8px; color: #94a3b8; }
+  .ok { color: #16a34a; font-weight: bold; }
+  .alert { color: #dc2626; font-weight: bold; }
+
+  .footer-p { font-size: 7px; color: #94a3b8; margin: 0 0 3px 0; }
+  .footer-brand { font-size: 9px; font-weight: bold; color: #64748b; margin: 0 0 2px 0; }
+</style>
 </head>
-
 <body>
-    <div class="header">
-        <h1>CronicCare - Reporte Clínico</h1>
-        <p>Telemonitoreo de Pacientes Crónicos</p>
-    </div>
 
-    <div class="info">
-        <p><strong>Paciente:</strong> {{ paciente.nombre }}</p>
-        <p><strong>DNI:</strong> {{ paciente.dni }}</p>
-        <p><strong>Diagnóstico:</strong> {{ paciente.enfermedad }}</p>
-        <p><strong>Fecha de reporte:</strong> {% now "d/m/Y H:i" %}</p>
-    </div>
+<table style="width: 100%; background-color: #1e40af;" cellpadding="0" cellspacing="0">
+  <tr>
+    <td style="width: 60%; padding: 14px 28px; vertical-align: middle;">
+      <p class="brand" style="margin: 0; padding: 0; line-height: 1.1;">CronicCare</p>
+      <p class="brand-tagline" style="margin: 3px 0 0 0; padding: 0; line-height: 1.1;">Sistema de Telemonitoreo de Pacientes Crónicos</p>
+    </td>
+    <td style="width: 40%; padding: 14px 28px; vertical-align: middle; text-align: right;">
+      <p class="report-type" style="margin: 0; padding: 0; line-height: 1.1;">Reporte Clínico Individual</p>
+      <p class="report-date" style="margin: 3px 0 0 0; padding: 0; line-height: 1.1;">Generado el {% now "d/m/Y" %} a las {% now "H:i" %}</p>
+    </td>
+  </tr>
+</table>
 
-    <h3>Historial de Mediciones</h3>
-    <table>
+<table style="width: 100%; background-color: #1d4ed8;" cellpadding="0" cellspacing="0">
+  <tr><td style="width: 100%; height: 4px; font-size: 1px; line-height: 1;">&nbsp;</td></tr>
+</table>
+
+<table style="width: 100%;" cellpadding="0" cellspacing="0">
+  <tr>
+    <td style="width: 5%;">&nbsp;</td>
+    <td style="width: 90%; padding-top: 18px; padding-bottom: 24px;">
+
+      <table style="width: 100%; background-color: #f8fafc; border: 1px solid #e2e8f0; border-collapse: collapse;" cellpadding="0" cellspacing="0">
+        <tr>
+          <td rowspan="2" style="width: 4px; background-color: #1e40af; font-size: 1px; line-height: 1; padding: 0; margin: 0;">&nbsp;</td>
+          
+          <td colspan="5" style="padding: 12px 14px 10px 14px; border-bottom: 1px solid #e2e8f0; vertical-align: middle;">
+            <span style="font-size: 19px; font-weight: bold; color: #0f172a; line-height: 1; vertical-align: middle;">{{ paciente.nombre }}</span>
+            &nbsp;&nbsp;&nbsp;&nbsp;
+            <span style="background-color: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; font-size: 9px; font-weight: bold; text-transform: uppercase; padding: 3px 9px; line-height: 1; vertical-align: middle;">
+              {{ paciente.get_enfermedad_display }}
+            </span>
+          </td>
+        </tr>
+        <tr>
+          <td style="width: 20%; padding: 9px 10px 9px 14px; vertical-align: top; border-right: 1px solid #e2e8f0;">
+            <div style="font-size: 8px; font-weight: bold; text-transform: uppercase; color: #64748b; margin: 0; padding: 0; line-height: 12px;">DNI</div>
+            <div style="font-size: 13px; font-weight: bold; color: #0f172a; font-family: Courier, monospace; margin: 2px 0 0 0; padding: 0; line-height: 16px;">{{ paciente.dni }}</div>
+          </td>
+          <td style="width: 20%; padding: 9px 10px; vertical-align: top; border-right: 1px solid #e2e8f0;">
+            <div style="font-size: 8px; font-weight: bold; text-transform: uppercase; color: #64748b; margin: 0; padding: 0; line-height: 12px;">Edad</div>
+            <div style="font-size: 13px; font-weight: bold; color: #0f172a; margin: 2px 0 0 0; padding: 0; line-height: 16px;">{% if paciente.edad %}{{ paciente.edad }} años{% else %}—{% endif %}</div>
+          </td>
+          <td style="width: 20%; padding: 9px 10px; vertical-align: top; border-right: 1px solid #e2e8f0;">
+            <div style="font-size: 8px; font-weight: bold; text-transform: uppercase; color: #64748b; margin: 0; padding: 0; line-height: 12px;">Fecha de Alta</div>
+            <div style="font-size: 13px; font-weight: bold; color: #0f172a; margin: 2px 0 0 0; padding: 0; line-height: 16px;">{{ paciente.fecha_registro|date:"d/m/Y" }}</div>
+          </td>
+          <td style="width: 20%; padding: 9px 10px; vertical-align: top; border-right: 1px solid #e2e8f0;">
+            <div style="font-size: 8px; font-weight: bold; text-transform: uppercase; color: #64748b; margin: 0; padding: 0; line-height: 12px;">Teléfono</div>
+            <div style="font-size: 13px; font-weight: bold; color: #0f172a; margin: 2px 0 0 0; padding: 0; line-height: 16px;">{% if paciente.telefono %}{{ paciente.telefono }}{% else %}—{% endif %}</div>
+          </td>
+          <td style="width: 20%; padding: 9px 14px 9px 10px; vertical-align: top;">
+            <div style="font-size: 8px; font-weight: bold; text-transform: uppercase; color: #64748b; margin: 0; padding: 0; line-height: 12px;">Total mediciones</div>
+            <div style="font-size: 13px; font-weight: bold; color: #1e40af; margin: 2px 0 0 0; padding: 0; line-height: 16px;">{{ metricas.count }}</div>
+          </td>
+        </tr>
+      </table>
+
+      <table style="width: 100%;" cellpadding="0" cellspacing="0">
+        <tr><td style="width: 100%; height: 14px; font-size: 1px; line-height: 1;">&nbsp;</td></tr>
+      </table>
+
+     <p class="section-title">Estado Actual de Métricas</p>
+      
+      <table style="width: 100%;" cellpadding="0" cellspacing="0">
+        <tr>
+          {% for kpi in ultimas_por_tipo %}
+          <td style="width: 23.5%; 
+            {% if kpi.alerta %}background-color: #fef2f2; border: 1px solid #fecaca;{% else %}background-color: #f8fafc; border: 1px solid #e2e8f0;{% endif %}
+            padding: 10px 12px; vertical-align: middle;">
+            
+            <div style="font-size: 10px; font-weight: bold; text-transform: uppercase; color: {% if kpi.alerta %}#ef4444{% else %}#64748b{% endif %}; margin: 0; padding: 0; line-height: 11px;">
+              {{ kpi.label }}
+            </div>
+            
+            {% if kpi.valor_str %}
+              <div style="font-size: 24px; font-weight: bold; color: {% if kpi.alerta %}#dc2626{% else %}#1e40af{% endif %}; margin: 4px 0 0 0; padding: 0; line-height: 26px;">
+                {{ kpi.valor_str }}<span style="font-size: 8px; color: #64748b; font-weight: normal; vertical-align: middle; margin-left: 2px;">{{ kpi.unidad }}</span>
+              </div>
+              <div style="font-size: 7px; color: #94a3b8; margin: 4px 0 0 0; padding: 0; line-height: 8px;">
+                {{ kpi.fecha_str }}
+              </div>
+            {% else %}
+              <div style="font-size: 11px; color: #cbd5e1; margin: 6px 0 0 0; padding: 0; line-height: 12px;">
+                Sin datos
+              </div>
+            {% endif %}
+          </td>
+          
+          {% if not forloop.last %}
+          <td style="width: 2%; font-size: 1px; line-height: 1;">&nbsp;</td>
+          {% endif %}
+          
+          {% endfor %}
+        </tr>
+      </table>
+
+      <table style="width: 100%;" cellpadding="0" cellspacing="0">
+        <tr><td style="width: 100%; height: 14px; font-size: 1px; line-height: 1;">&nbsp;</td></tr>
+      </table>
+
+      <p class="section-title">Historial de Mediciones</p>
+
+      {% if metricas %}
+      <table class="tbl" cellpadding="0" cellspacing="0">
         <thead>
-            <tr>
-                <th>Fecha</th>
-                <th>Métrica</th>
-                <th>Valor</th>
-                <th>Estado</th>
-            </tr>
+          <tr>
+            <th style="width: 22%;">Fecha y Hora</th>
+            <th style="width: 24%;">Tipo de Métrica</th>
+            <th style="width: 16%;">Valor</th>
+            <th style="width: 10%;">Unidad</th>
+            <th style="width: 28%;">Estado Clínico</th>
+          </tr>
         </thead>
         <tbody>
-            {% for m in metricas %}
-            <tr>
-                <td>{{ m.fecha|date:"d/m/Y H:i" }}</td>
-                <td>{{ m.tipo }}</td>
-                <td>{{ m.valor }}</td>
-                <td class="{% if m.alerta %}alerta{% endif %}">
-                    {% if m.alerta %}ALERTA CRÍTICA{% else %}NORMAL{% endif %}
-                </td>
-            </tr>
-            {% endfor %}
+          {% for m in metricas %}
+          <tr {% if forloop.counter|divisibleby:2 %}class="bg-alt"{% endif %}>
+            <td class="td-mono" style="font-size: 8.5px;">{{ m.fecha|date:"d/m/Y H:i" }}</td>
+            <td>{{ m.get_tipo_display }}</td>
+            <td class="td-mono">{{ m.valor }}</td>
+            <td class="td-unit">
+              {% if m.tipo == 'glucosa' %}mg/dL
+              {% elif m.tipo == 'presion' %}mmHg
+              {% elif m.tipo == 'saturacion' %}%
+              {% elif m.tipo == 'frecuencia' %}lpm
+              {% endif %}
+            </td>
+            <td>
+              {% if m.alerta %}<span class="alert">&#9679; Alerta crítica</span>
+              {% else %}<span class="ok">&#9679; Normal</span>{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
         </tbody>
-    </table>
-</body>
+      </table>
+      {% else %}
+      <p style="text-align: center; color: #94a3b8; padding: 20px 0;">No hay mediciones registradas para este paciente.</p>
+      {% endif %}
 
+     <table style="width: 100%; border-top: 1px solid #e2e8f0; margin-top: 5px;" cellpadding="0" cellspacing="0">
+      <tr>
+        <td style="width: 70%; padding-top: 10px; vertical-align: top;">
+          <div style="font-size: 7px; color: #94a3b8; margin: 0; padding: 0; line-height: 9px;">
+            Documento generado automáticamente por el sistema CronicCare. Uso exclusivo del equipo médico autorizado.
+          </div>
+          <div style="font-size: 7px; color: #94a3b8; margin: 0; padding: 0; line-height: 9px;">
+            Información confidencial protegida por normativas de privacidad médica.
+          </div>
+        </td>
+        <td style="width: 30%; padding-top: 10px; text-align: right; vertical-align: top;">
+          <div style="font-size: 9px; font-weight: bold; color: #64748b; margin: 0; padding: 0; line-height: 11px;">
+            CronicCare
+          </div>
+          <div style="font-size: 7px; color: #94a3b8; margin: 0; padding: 0; line-height: 9px;">
+            Telemonitoreo Clínico
+          </div>
+        </td>
+      </tr>
+    </table>
+
+    </td>
+    <td style="width: 5%;">&nbsp;</td>
+  </tr>
+</table>
+
+</body>
 </html>

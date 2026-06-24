@@ -8,19 +8,20 @@ def alertas_pendientes(request):
             'alertas_recientes': [],
         }
 
-    alertas = Alerta.objects.filter(
+    alertas = list(Alerta.objects.filter(
         resuelta=False,
         criticidad='critica',
-    ).select_related('paciente', 'metrica').order_by('-fecha')
+    ).select_related('paciente', 'metrica').order_by('-fecha'))
 
-    alertas_data = []
-    for alerta in alertas[:3]:
-        alertas_data.append({
+    alertas_data = [
+        {
             'alerta': alerta,
             'valor_str': f"{float(alerta.metrica.valor):.1f}" if alerta.metrica else None,
-        })
+        }
+        for alerta in alertas[:3]
+    ]
 
     return {
-        'total_alertas_pendientes': alertas.count(),
+        'total_alertas_pendientes': len(alertas),
         'alertas_recientes': alertas_data,
     }

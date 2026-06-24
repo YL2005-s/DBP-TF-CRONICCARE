@@ -159,13 +159,7 @@ def registrar_metrica_movil(request):
             status=400
         )
 
-    es_alerta = False
-    if paciente.enfermedad == 'diabetes_t2':
-        es_alerta = valor > 126
-    elif paciente.enfermedad == 'hipertension':
-        es_alerta = valor > 140
-    elif paciente.enfermedad == 'asma':
-        es_alerta = valor < 90
+    es_alerta = Metrica.calcular_alerta(paciente.enfermedad, valor)
 
     metrica = Metrica.objects.create(
         paciente=paciente,

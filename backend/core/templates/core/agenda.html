@@ -3,103 +3,113 @@
 {% block title %}Agenda{% endblock %}
 
 {% block content %}
-<style>
-  .agenda-grid { display: grid; grid-template-columns: 1fr 340px; gap: 24px; align-items: start; }
-  .section-title {
-    font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
-    letter-spacing: 0.06em; color: var(--muted);
-    padding-bottom: 10px; border-bottom: 1px solid var(--border); margin-bottom: 16px;
-  }
-  .cita-row {
-    display: flex; align-items: flex-start; gap: 14px;
-    padding: 14px 0; border-bottom: 1px solid var(--border);
-  }
-  .cita-row:last-child { border-bottom: none; }
-  .cita-hora {
-    min-width: 52px; text-align: center;
-    font-size: 0.85rem; font-weight: 700; color: var(--primary);
-    background: var(--primary-light); border-radius: 8px; padding: 6px 4px;
-  }
-  .cita-hora span { display: block; font-size: 0.65rem; font-weight: 500; color: var(--muted); }
-  .badge-estado {
-    display: inline-block; font-size: 0.68rem; font-weight: 700;
-    padding: 2px 8px; border-radius: 20px;
-  }
-  .estado-programada { background: var(--primary-light); color: var(--primary); }
-  .estado-realizada  { background: var(--ok-light); color: var(--ok); }
-  .estado-cancelada  { background: #f1f5f9; color: var(--muted); }
-  .estado-no_asistio { background: var(--alert-light); color: var(--alert); }
-  .badge-tipo {
-    font-size: 0.68rem; font-weight: 600; padding: 2px 8px;
-    border-radius: 20px; background: #f1f5f9; color: var(--text2);
-  }
-  .empty-state { text-align: center; padding: 32px 0; color: var(--muted); font-size: 0.82rem; }
-
-  /* Modal */
-  .modal-bg {
-    display: none; position: fixed; inset: 0;
-    background: rgba(0,0,0,0.4); z-index: 200; align-items: center; justify-content: center;
-  }
-  .modal-bg.open { display: flex; }
-  .modal {
-    background: var(--surface); border-radius: 16px; padding: 28px;
-    width: 100%; max-width: 520px; box-shadow: var(--shadow-md);
-  }
-  .modal h3 { font-size: 1rem; font-weight: 800; margin-bottom: 20px; }
-
-  @media (max-width: 768px) {
-    .agenda-grid { grid-template-columns: 1fr; }
-  }
-</style>
-
-<div class="container">
+<div class="p-10 px-12 max-w-350 mx-auto">
 
   {% if messages %}
-    {% for msg in messages %}
-    {% if 'correctamente' in msg|lower or 'agendad' in msg|lower %}
-    <div class="msg-ok" style="margin-bottom:16px;padding:11px 16px;border-radius:8px;font-size:0.82rem;font-weight:600;background:var(--ok-light);color:var(--ok);border:1px solid #86efac;">{{ msg }}</div>
-    {% else %}
-    <div style="margin-bottom:16px;padding:11px 16px;border-radius:8px;font-size:0.82rem;font-weight:600;background:var(--alert-light);color:var(--alert);border:1px solid #fca5a5;">{{ msg }}</div>
-    {% endif %}
-    {% endfor %}
+  {% for msg in messages %}
+  {% if 'correctamente' in msg|lower or 'agendad' in msg|lower %}
+  <div class="mb-4 px-4 py-2.75 rounded-lg text-[0.82rem] font-semibold bg-ok-light text-ok border border-[#86efac]">{{ msg }}</div>
+  {% else %}
+  <div class="mb-4 px-4 py-2.75 rounded-lg text-[0.82rem] font-semibold bg-alert-light text-alert border border-[#fca5a5]">{{ msg }}</div>
+  {% endif %}
+  {% endfor %}
   {% endif %}
 
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
-    <div>
-      <h1 style="font-size:1.4rem;font-weight:800;letter-spacing:-0.03em;">Agenda</h1>
-      <p style="font-size:0.8rem;color:var(--muted);margin-top:3px;">{{ hoy|date:"l, d \d\e F \d\e Y" }}</p>
-    </div>
-    <button class="btn-primary" onclick="document.getElementById('modalNuevaCita').classList.add('open')">
-      + Nueva cita
-    </button>
+  <div class="mb-6">
+    <h1 class="font-black text-[1.75rem] tracking-wide text-text">Agenda</h1>
+    <p class="text-muted text-[0.9rem] mt-1">{{ hoy|date:"l, d \d\e F \d\e Y" }}</p>
   </div>
 
-  <div class="agenda-grid">
+  <div class="bg-surface rounded-xl border border-border shadow-sm mb-6 overflow-hidden">
+    <div class="px-6 py-4 border-b border-border flex items-center justify-between">
+      <p class="text-[0.7rem] font-bold uppercase tracking-[0.06em] text-muted">Semana actual</p>
+      <span class="text-[0.78rem] text-muted">{{ semana_inicio|date:"d \d\e F" }} — {{ semana_fin|date:"d \d\e F \d\e Y" }}</span>
+    </div>
+    <div class="grid grid-cols-7 divide-x divide-border">
+      {% for dia in dias_semana %}
+      <div class="min-h-36 p-3 {% if dia.es_hoy %}bg-primary-light{% elif dia.pasado %}bg-bg/60{% endif %}">
+        <div class="text-center mb-3">
+          <div class="text-[0.62rem] font-bold uppercase tracking-wider mb-1
+            {% if dia.es_hoy %}text-primary{% else %}text-muted{% endif %}">
+            {{ dia.nombre }}
+          </div>
+          {% if dia.es_hoy %}
+          <div class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-primary text-white text-[0.85rem] font-black">
+            {{ dia.fecha|date:"d" }}
+          </div>
+          {% else %}
+          <div class="text-[0.9rem] font-bold {% if dia.pasado %}text-muted{% else %}text-text{% endif %}">
+            {{ dia.fecha|date:"d" }}
+          </div>
+          {% endif %}
+        </div>
+        <div class="flex flex-col gap-1">
+          {% for c in dia.citas %}
+          <div class="px-1.5 py-1 rounded-md text-[0.62rem] font-semibold leading-tight cursor-default
+            {% if c.estado == 'programada' %}bg-primary/12 text-primary
+            {% elif c.estado == 'realizada' %}bg-ok/12 text-ok
+            {% else %}bg-border text-muted{% endif %}"
+            title="{{ c.paciente.nombre }} — {{ c.motivo }}">
+            <span class="block font-black">{{ c.fecha_hora|date:"H:i" }}</span>
+            <span class="truncate block">{{ c.paciente.nombre|truncatechars:13 }}</span>
+          </div>
+          {% endfor %}
+          {% if not dia.citas and dia.es_hoy %}
+          <div class="text-center text-[0.62rem] text-muted mt-1">Sin citas</div>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
 
-    <!-- Columna principal -->
+  <div class="grid grid-cols-[1fr_320px] gap-6 items-start max-md:grid-cols-1">
+
     <div>
+      <div class="bg-surface rounded-xl border border-border shadow-sm overflow-hidden">
 
-      <!-- Citas de hoy -->
-      <div class="card" style="margin-bottom:20px;">
-        <p class="section-title">Hoy</p>
-        {% if hoy_citas %}
+        <!-- Tabs -->
+        <div class="flex border-b border-border px-2 pt-1 gap-1">
+          <button onclick="switchTab('hoy')" id="tab-hoy"
+            class="tab-btn px-4 py-2.5 text-[0.8rem] font-semibold rounded-t-lg border-b-2 transition-colors duration-150 cursor-pointer bg-transparent border-primary text-primary">
+            Hoy
+            {% if hoy_citas %}<span class="ml-1.5 text-[0.62rem] font-black bg-primary text-white px-1.5 py-0.5 rounded-full">{{ hoy_citas|length }}</span>{% endif %}
+          </button>
+          <button onclick="switchTab('proximas')" id="tab-proximas"
+            class="tab-btn px-4 py-2.5 text-[0.8rem] font-semibold rounded-t-lg border-b-2 transition-colors duration-150 cursor-pointer bg-transparent border-transparent text-muted hover:text-text">
+            Próximas
+            {% if semana_citas %}<span class="ml-1.5 text-[0.62rem] font-black bg-primary text-white px-1.5 py-0.5 rounded-full">{{ semana_citas|length }}</span>{% endif %}
+          </button>
+          <button onclick="switchTab('realizadas')" id="tab-realizadas"
+            class="tab-btn px-4 py-2.5 text-[0.8rem] font-semibold rounded-t-lg border-b-2 transition-colors duration-150 cursor-pointer bg-transparent border-transparent text-muted hover:text-text">
+            Realizadas
+          </button>
+        </div>
+
+        <!-- Tab: Hoy -->
+        <div id="panel-hoy" class="tab-panel active">
+          {% if hoy_citas %}
           {% for c in hoy_citas %}
-          <div class="cita-row">
-            <div class="cita-hora">
-              {{ c.fecha_hora|date:"H:i" }}
-              <span>{{ c.fecha_hora|date:"d/m" }}</span>
+          <div class="flex items-center gap-4 px-6 py-4 border-b border-border last:border-b-0 hover:bg-bg/50 transition-colors duration-150">
+            <div class="text-center shrink-0 w-12">
+              <div class="text-[1rem] font-black text-primary leading-none">{{ c.fecha_hora|date:"H:i" }}</div>
+              <div class="text-[0.62rem] text-muted mt-0.5">hrs</div>
             </div>
-            <div style="flex:1;">
-              <div style="font-size:0.9rem;font-weight:700;">{{ c.paciente.nombre }}</div>
-              <div style="font-size:0.75rem;color:var(--muted);margin-top:3px;">
-                <span class="badge-tipo">{{ c.get_tipo_display }}</span>
-                · {{ c.motivo }}
-              </div>
+            <div class="w-px h-8 bg-border shrink-0"></div>
+            <div class="flex-1 min-w-0">
+              <div class="text-[0.88rem] font-bold text-text truncate">{{ c.paciente.nombre }}</div>
+              <div class="text-[0.75rem] text-muted mt-0.5 truncate">{{ c.get_tipo_display }} · {{ c.motivo }}</div>
             </div>
-            <div style="display:flex;gap:8px;flex-shrink:0;">
-              <span class="badge-estado estado-{{ c.estado }}">{{ c.get_estado_display }}</span>
+            <div class="flex items-center gap-2 shrink-0">
+              <span class="text-[0.68rem] font-bold px-2.5 py-1 rounded-full
+                {% if c.estado == 'programada' %}bg-primary-light text-primary
+                {% elif c.estado == 'realizada' %}bg-ok-light text-ok
+                {% elif c.estado == 'cancelada' %}bg-bg text-muted
+                {% else %}bg-alert-light text-alert{% endif %}">
+                {{ c.get_estado_display }}
+              </span>
               {% if c.estado == 'programada' %}
-              <button class="btn-outline" style="font-size:0.72rem;padding:4px 10px;"
+              <button class="bg-primary text-white px-3 py-1.5 rounded-lg font-semibold text-[0.72rem] font-sans cursor-pointer border-0 transition-colors duration-200 hover:bg-primary-dark"
                 onclick="abrirCompletar({{ c.id }}, '{{ c.paciente.nombre|escapejs }}')">
                 Completar
               </button>
@@ -107,35 +117,40 @@
             </div>
           </div>
           {% endfor %}
-        {% else %}
-          <div class="empty-state">No hay citas para hoy.</div>
-        {% endif %}
-      </div>
+          {% else %}
+          <div class="flex flex-col items-center justify-center py-14 px-6 text-center">
+            <div class="w-12 h-12 rounded-full bg-bg border border-border flex items-center justify-center mb-3 text-muted">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+            </div>
+            <p class="text-[0.88rem] font-bold text-text2 mb-1">Sin citas para hoy</p>
+            <p class="text-[0.75rem] text-muted">Usa el formulario para agendar una.</p>
+          </div>
+          {% endif %}
+        </div>
 
-      <!-- Próximas citas -->
-      <div class="card" style="margin-bottom:20px;">
-        <p class="section-title">Próximas citas</p>
-        {% if semana_citas %}
+        <!-- Tab: Próximas -->
+        <div id="panel-proximas" class="tab-panel">
+          {% if semana_citas %}
           {% for c in semana_citas %}
-          <div class="cita-row">
-            <div class="cita-hora">
-              {{ c.fecha_hora|date:"H:i" }}
-              <span>{{ c.fecha_hora|date:"d/m" }}</span>
+          <div class="flex items-center gap-4 px-6 py-4 border-b border-border last:border-b-0 hover:bg-bg/50 transition-colors duration-150">
+            <div class="text-center shrink-0 w-12">
+              <div class="text-[0.88rem] font-black text-primary leading-none">{{ c.fecha_hora|date:"H:i" }}</div>
+              <div class="text-[0.68rem] font-semibold text-muted mt-0.5">{{ c.fecha_hora|date:"d/m" }}</div>
             </div>
-            <div style="flex:1;">
-              <div style="font-size:0.9rem;font-weight:700;">{{ c.paciente.nombre }}</div>
-              <div style="font-size:0.75rem;color:var(--muted);margin-top:3px;">
-                <span class="badge-tipo">{{ c.get_tipo_display }}</span>
-                · {{ c.motivo }}
-              </div>
+            <div class="w-px h-8 bg-border shrink-0"></div>
+            <div class="flex-1 min-w-0">
+              <div class="text-[0.88rem] font-bold text-text truncate">{{ c.paciente.nombre }}</div>
+              <div class="text-[0.75rem] text-muted mt-0.5 truncate">{{ c.get_tipo_display }} · {{ c.motivo }}</div>
             </div>
-            <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;">
-              <span class="badge-estado estado-{{ c.estado }}">{{ c.get_estado_display }}</span>
+            <div class="flex items-center gap-2 shrink-0">
+              <span class="text-[0.68rem] font-bold px-2.5 py-1 rounded-full bg-primary-light text-primary">Programada</span>
               <form method="POST" action="{% url 'cambiar_estado_consulta' c.id %}">
                 {% csrf_token %}
                 <input type="hidden" name="estado" value="cancelada">
-                <button type="submit" class="btn-outline"
-                  style="font-size:0.72rem;padding:4px 10px;color:var(--muted);border-color:var(--border);"
+                <button type="submit"
+                  class="px-2.5 py-1 rounded-lg text-muted border border-border bg-surface cursor-pointer font-semibold text-[0.72rem] font-sans transition-colors duration-200 hover:text-alert hover:border-alert hover:bg-alert-light"
                   onclick="return confirm('¿Cancelar esta cita?')">
                   Cancelar
                 </button>
@@ -143,71 +158,100 @@
             </div>
           </div>
           {% endfor %}
-        {% else %}
-          <div class="empty-state">No hay citas programadas.</div>
-        {% endif %}
-      </div>
-
-      <!-- Consultas recientes realizadas -->
-      {% if recientes %}
-      <div class="card">
-        <p class="section-title">Últimas consultas realizadas</p>
-        {% for c in recientes %}
-        <div class="cita-row">
-          <div class="cita-hora" style="background:#f1f5f9;color:var(--muted);">
-            {{ c.fecha_hora|date:"H:i" }}
-            <span>{{ c.fecha_hora|date:"d/m" }}</span>
-          </div>
-          <div style="flex:1;">
-            <div style="font-size:0.88rem;font-weight:700;">{{ c.paciente.nombre }}</div>
-            <div style="font-size:0.75rem;color:var(--muted);margin-top:2px;">
-              <span class="badge-tipo">{{ c.get_tipo_display }}</span>
-              · {{ c.motivo }}
-              {% if c.diagnostico %} · <em>{{ c.diagnostico|truncatechars:60 }}</em>{% endif %}
+          {% if proximas_page.paginator.num_pages > 1 %}
+          <div class="flex items-center justify-between px-6 py-3 border-t border-border">
+            <span class="text-[0.75rem] text-muted">Página {{ proximas_page.number }} de {{ proximas_page.paginator.num_pages }}</span>
+            <div class="flex gap-1">
+              {% if proximas_page.has_previous %}<a href="?pp={{ proximas_page.previous_page_number }}&tab=proximas" class="px-3 py-1.5 rounded-lg border border-border text-[0.75rem] font-semibold text-text2 no-underline hover:bg-bg">← Ant.</a>{% endif %}
+              {% if proximas_page.has_next %}<a href="?pp={{ proximas_page.next_page_number }}&tab=proximas" class="px-3 py-1.5 rounded-lg border border-border text-[0.75rem] font-semibold text-text2 no-underline hover:bg-bg">Sig. →</a>{% endif %}
             </div>
           </div>
-          <span class="badge-estado estado-realizada">Realizada</span>
+          {% endif %}
+          {% else %}
+          <div class="flex flex-col items-center justify-center py-14 px-6 text-center">
+            <p class="text-[0.88rem] font-bold text-text2 mb-1">Sin próximas citas</p>
+            <p class="text-[0.75rem] text-muted">No hay citas programadas para los próximos días.</p>
+          </div>
+          {% endif %}
         </div>
-        {% endfor %}
-      </div>
-      {% endif %}
 
+        <!-- Tab: Realizadas -->
+        <div id="panel-realizadas" class="tab-panel">
+          {% if recientes %}
+          {% for c in recientes %}
+          <div class="flex items-center gap-4 px-6 py-4 border-b border-border last:border-b-0 hover:bg-bg/50 transition-colors duration-150">
+            <div class="text-center shrink-0 w-12">
+              <div class="text-[0.88rem] font-black text-muted leading-none">{{ c.fecha_hora|date:"H:i" }}</div>
+              <div class="text-[0.68rem] font-semibold text-muted mt-0.5">{{ c.fecha_hora|date:"d/m" }}</div>
+            </div>
+            <div class="w-px h-8 bg-border shrink-0"></div>
+            <div class="flex-1 min-w-0">
+              <div class="text-[0.88rem] font-bold text-text truncate">{{ c.paciente.nombre }}</div>
+              <div class="text-[0.75rem] text-muted mt-0.5 truncate">
+                {{ c.get_tipo_display }} · {{ c.motivo }}{% if c.diagnostico %} · {{ c.diagnostico|truncatechars:40 }}{% endif %}
+              </div>
+            </div>
+            <span class="text-[0.68rem] font-bold px-2.5 py-1 rounded-full bg-ok-light text-ok shrink-0">Realizada</span>
+          </div>
+          {% endfor %}
+          {% if recientes_page.paginator.num_pages > 1 %}
+          <div class="flex items-center justify-between px-6 py-3 border-t border-border">
+            <span class="text-[0.75rem] text-muted">Página {{ recientes_page.number }} de {{ recientes_page.paginator.num_pages }}</span>
+            <div class="flex gap-1">
+              {% if recientes_page.has_previous %}<a href="?rp={{ recientes_page.previous_page_number }}&tab=realizadas" class="px-3 py-1.5 rounded-lg border border-border text-[0.75rem] font-semibold text-text2 no-underline hover:bg-bg">← Ant.</a>{% endif %}
+              {% if recientes_page.has_next %}<a href="?rp={{ recientes_page.next_page_number }}&tab=realizadas" class="px-3 py-1.5 rounded-lg border border-border text-[0.75rem] font-semibold text-text2 no-underline hover:bg-bg">Sig. →</a>{% endif %}
+            </div>
+          </div>
+          {% endif %}
+          {% else %}
+          <div class="flex flex-col items-center justify-center py-14 px-6 text-center">
+            <p class="text-[0.88rem] font-bold text-text2 mb-1">Sin consultas recientes</p>
+            <p class="text-[0.75rem] text-muted">Las consultas completadas aparecerán aquí.</p>
+          </div>
+          {% endif %}
+        </div>
+
+      </div>
     </div>
 
-    <!-- Panel lateral: nueva cita rápida -->
-    <div>
-      <div class="card">
-        <p class="section-title">Agendar cita rápida</p>
+    <div class="sticky top-6">
+      <div class="bg-surface rounded-xl border border-border shadow-sm p-6">
+        <p class="text-[0.7rem] font-bold uppercase tracking-[0.06em] text-muted pb-2.5 border-b border-border mb-5">Agendar cita</p>
         <form method="POST">
           {% csrf_token %}
-          <div class="form-group">
-            <label class="form-label">Paciente *</label>
-            <select name="paciente_id" class="form-input" required>
+          <div class="mb-4">
+            <label class="block text-[0.8rem] font-semibold text-text2 mb-1.5">Paciente *</label>
+            <select name="paciente_id" required
+              class="w-full px-3.5 py-2.5 bg-surface border-[1.5px] border-border text-text rounded-lg font-sans text-[0.9rem] outline-none transition-[border-color,box-shadow] duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(30,64,175,0.1)] appearance-auto">
               <option value="">— Seleccionar —</option>
               {% for p in pacientes %}
               <option value="{{ p.id }}">{{ p.nombre }}</option>
               {% endfor %}
             </select>
           </div>
-          <div class="form-group">
-            <label class="form-label">Tipo</label>
-            <select name="tipo" class="form-input">
+          <div class="mb-4">
+            <label class="block text-[0.8rem] font-semibold text-text2 mb-1.5">Tipo</label>
+            <select name="tipo"
+              class="w-full px-3.5 py-2.5 bg-surface border-[1.5px] border-border text-text rounded-lg font-sans text-[0.9rem] outline-none transition-[border-color,box-shadow] duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(30,64,175,0.1)] appearance-auto">
               {% for val, label in tipos %}
               <option value="{{ val }}">{{ label }}</option>
               {% endfor %}
             </select>
           </div>
-          <div class="form-group">
-            <label class="form-label">Fecha y hora *</label>
-            <input type="datetime-local" name="fecha_hora" class="form-input" required
-              min="{{ today }}T00:00">
+          <div class="mb-4">
+            <label class="block text-[0.8rem] font-semibold text-text2 mb-1.5">Fecha y hora *</label>
+            <input type="datetime-local" name="fecha_hora" required min="{{ today }}T00:00"
+              class="w-full px-3.5 py-2.5 bg-surface border-[1.5px] border-border text-text rounded-lg font-sans text-[0.9rem] outline-none transition-[border-color,box-shadow] duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(30,64,175,0.1)] appearance-auto">
           </div>
-          <div class="form-group">
-            <label class="form-label">Motivo *</label>
-            <input type="text" name="motivo" class="form-input"
-              placeholder="Ej. Control mensual de glucosa" required>
+          <div class="mb-5">
+            <label class="block text-[0.8rem] font-semibold text-text2 mb-1.5">Motivo *</label>
+            <input type="text" name="motivo" placeholder="Ej. Control mensual de glucosa" required
+              class="w-full px-3.5 py-2.5 bg-surface border-[1.5px] border-border text-text rounded-lg font-sans text-[0.9rem] outline-none transition-[border-color,box-shadow] duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(30,64,175,0.1)] appearance-auto">
           </div>
-          <button type="submit" class="btn-primary" style="width:100%;">Agendar</button>
+          <button type="submit"
+            class="w-full bg-primary text-white border-0 py-2.5 rounded-lg font-bold text-[0.88rem] font-sans cursor-pointer transition-colors duration-200 hover:bg-primary-dark">
+            Agendar cita
+          </button>
         </form>
       </div>
     </div>
@@ -215,29 +259,34 @@
   </div>
 </div>
 
-<!-- Modal: completar consulta -->
-<div class="modal-bg" id="modalCompletar">
-  <div class="modal">
-    <h3 id="modalCompletarTitulo">Completar consulta</h3>
+<div class="modal-bg fixed inset-0 bg-black/40 z-200 items-center justify-center" id="modalCompletar">
+  <div class="bg-surface rounded-2xl p-7 w-full max-w-130 shadow-md">
+    <h3 class="text-[1rem] font-black mb-1" id="modalCompletarTitulo">Completar consulta</h3>
+    <p class="text-[0.78rem] text-muted mb-5">Registra el resultado de la consulta.</p>
     <form method="POST" id="formCompletar">
       {% csrf_token %}
-      <div class="form-group">
-        <label class="form-label">Diagnóstico</label>
-        <textarea name="diagnostico" class="form-input" rows="3"
-          placeholder="Diagnóstico y hallazgos de la consulta..."></textarea>
+      <div class="mb-4">
+        <label class="block text-[0.8rem] font-semibold text-text2 mb-1.5">Diagnóstico</label>
+        <textarea name="diagnostico" rows="3" placeholder="Diagnóstico y hallazgos de la consulta..."
+          class="w-full px-3.5 py-2.5 bg-surface border-[1.5px] border-border text-text rounded-lg font-sans text-[0.9rem] outline-none transition-[border-color,box-shadow] duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(30,64,175,0.1)] resize-none"></textarea>
       </div>
-      <div class="form-group">
-        <label class="form-label">Indicaciones</label>
-        <textarea name="indicaciones" class="form-input" rows="2"
-          placeholder="Indicaciones para el paciente..."></textarea>
+      <div class="mb-4">
+        <label class="block text-[0.8rem] font-semibold text-text2 mb-1.5">Indicaciones</label>
+        <textarea name="indicaciones" rows="2" placeholder="Indicaciones para el paciente..."
+          class="w-full px-3.5 py-2.5 bg-surface border-[1.5px] border-border text-text rounded-lg font-sans text-[0.9rem] outline-none transition-[border-color,box-shadow] duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(30,64,175,0.1)] resize-none"></textarea>
       </div>
-      <div class="form-group">
-        <label class="form-label">Próxima cita <span style="color:var(--muted)">(opcional)</span></label>
-        <input type="date" name="proxima_cita" class="form-input">
+      <div class="mb-5">
+        <label class="block text-[0.8rem] font-semibold text-text2 mb-1.5">Próxima cita <span class="text-muted font-normal">(opcional)</span></label>
+        <input type="date" name="proxima_cita"
+          class="w-full px-3.5 py-2.5 bg-surface border-[1.5px] border-border text-text rounded-lg font-sans text-[0.9rem] outline-none transition-[border-color,box-shadow] duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(30,64,175,0.1)]">
       </div>
-      <div style="display:flex;gap:12px;margin-top:8px;">
-        <button type="submit" class="btn-primary" style="flex:1;">Guardar</button>
-        <button type="button" class="btn-outline" style="flex:1;"
+      <div class="flex gap-3">
+        <button type="submit"
+          class="flex-1 bg-primary text-white border-0 py-2.5 rounded-lg font-bold text-[0.88rem] font-sans cursor-pointer transition-colors duration-200 hover:bg-primary-dark">
+          Guardar
+        </button>
+        <button type="button"
+          class="flex-1 bg-surface text-text2 border border-border py-2.5 rounded-lg font-semibold text-[0.88rem] font-sans cursor-pointer transition-colors duration-200 hover:bg-bg"
           onclick="document.getElementById('modalCompletar').classList.remove('open')">
           Cancelar
         </button>
@@ -247,6 +296,24 @@
 </div>
 
 <script>
+const TABS = ['hoy', 'proximas', 'realizadas'];
+
+function switchTab(name) {
+  TABS.forEach(t => {
+    const panel = document.getElementById('panel-' + t);
+    const btn = document.getElementById('tab-' + t);
+    const active = t === name;
+    panel.classList.toggle('active', active);
+    btn.classList.toggle('border-primary', active);
+    btn.classList.toggle('text-primary', active);
+    btn.classList.toggle('border-transparent', !active);
+    btn.classList.toggle('text-muted', !active);
+  });
+}
+
+const tabParam = new URLSearchParams(window.location.search).get('tab');
+if (tabParam && TABS.includes(tabParam)) switchTab(tabParam);
+
 function abrirCompletar(id, nombre) {
   document.getElementById('modalCompletarTitulo').textContent = 'Completar consulta — ' + nombre;
   document.getElementById('formCompletar').action = '/consulta/' + id + '/completar/';

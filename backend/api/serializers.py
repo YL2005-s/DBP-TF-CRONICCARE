@@ -36,8 +36,8 @@ class NotaClinicaSerializer(serializers.ModelSerializer):
 
 
 class PerfilMedicoSerializer(serializers.ModelSerializer):
-    nombre_completo      = serializers.CharField(source='user.get_full_name', read_only=True)
-    email                = serializers.CharField(source='user.email', read_only=True)
+    nombre_completo = serializers.CharField(source='user.get_full_name', read_only=True)
+    email = serializers.CharField(source='user.email', read_only=True)
     especialidad_display = serializers.CharField(source='get_especialidad_display', read_only=True)
 
     class Meta:

@@ -3,36 +3,34 @@
 {% block title %}Bandeja de Alertas{% endblock %}
 
 {% block content %}
-<div class="container">
+<div class="p-10 px-12 max-w-350 mx-auto">
 
-  <header style="margin-bottom: 32px;">
-    <h1 style="font-weight: 800; font-size: 1.75rem; letter-spacing: -0.03em; color: var(--text);">Bandeja de Alertas</h1>
-    <p style="color: var(--muted); font-size: 0.9rem; margin-top: 4px;">Eventos detectados en tiempo real.</p>
+  <header class="mb-8">
+    <h1 class="font-black text-[1.75rem] tracking-wide text-text">Bandeja de Alertas</h1>
+    <p class="text-muted text-[0.9rem] mt-1">Eventos detectados en tiempo real.</p>
   </header>
 
-  <div class="card" style="padding: 0; overflow: hidden;">
+  <div class="bg-surface rounded-xl border border-border shadow-sm p-0 overflow-hidden">
 
-    <div class="table-header" style="grid-template-columns: 1fr 1.5fr 1.2fr 1fr 130px;">
+    <div class="grid px-5 py-2.5 text-[0.72rem] font-bold text-muted uppercase tracking-[0.04em] bg-bg border-b border-border" style="grid-template-columns: 1fr 1.5fr 1.2fr 1fr 130px">
       <div>Fecha y Hora</div>
       <div>Paciente</div>
       <div>Métrica Crítica</div>
       <div>Severidad</div>
-      <div style="text-align: right;">Acción</div>
+      <div class="text-right">Acción</div>
     </div>
 
     <div id="tabla-alertas">
     {% for item in alertas %}
-    <div id="alerta-{{ item.alerta.id }}" class="table-row" style="grid-template-columns: 1fr 1.5fr 1.2fr 1fr 130px;">
-      <div style="font-family: monospace; font-size: 0.82rem; color: var(--muted);">{{ item.fecha_str }}</div>
-      <div style="font-weight: 700;">
+    <div id="alerta-{{ item.alerta.id }}" class="grid px-5 py-3.5 items-center border-b border-border transition-colors duration-150 text-sm hover:bg-primary-light last:border-b-0" style="grid-template-columns: 1fr 1.5fr 1.2fr 1fr 130px">
+      <div class="font-mono text-[0.82rem] text-muted">{{ item.fecha_str }}</div>
+      <div class="font-bold">
         <a href="{% url 'detalle_paciente' item.alerta.paciente.id %}"
-           style="color: var(--text); text-decoration: none; transition: color 0.2s;"
-           onmouseover="this.style.color='var(--primary)'"
-           onmouseout="this.style.color='var(--text)'">
+           class="text-text no-underline transition-colors duration-200 hover:text-primary">
           {{ item.alerta.paciente.nombre }}
         </a>
       </div>
-      <div style="font-family: monospace; font-weight: 600; color: var(--alert);">
+      <div class="font-mono font-semibold text-alert">
         {% if item.alerta.metrica %}
           {{ item.alerta.metrica.get_tipo_display }}: {{ item.valor_str }}
           {% if item.alerta.metrica.tipo == 'glucosa' %}mg/dL
@@ -44,27 +42,28 @@
       </div>
       <div>
         {% if item.alerta.criticidad == 'critica' %}
-        <span class="badge-alert">{{ item.alerta.get_criticidad_display }}</span>
+        <span class="bg-alert-light text-alert px-2.5 py-0.5 rounded-full text-[0.75rem] font-semibold">{{ item.alerta.get_criticidad_display }}</span>
         {% else %}
-        <span class="badge-warning">{{ item.alerta.get_criticidad_display }}</span>
+        <span class="bg-warning-light text-warning px-2.5 py-0.5 rounded-full text-[0.75rem] font-semibold">{{ item.alerta.get_criticidad_display }}</span>
         {% endif %}
       </div>
-      <div style="text-align: right;">
-        <button type="button" class="btn-outline btn-sm"
+      <div class="text-right">
+        <button type="button"
+                class="bg-transparent text-primary border-[1.5px] border-primary px-3 py-1.5 rounded-lg font-semibold text-[0.75rem] font-sans cursor-pointer transition-colors duration-200 hover:bg-primary-light"
                 onclick="resolverAlerta({{ item.alerta.id }})">
           Marcar resuelta
         </button>
       </div>
     </div>
     {% empty %}
-    <div style="padding: 80px 24px; text-align: center; color: var(--muted);">
-      <div style="width: 56px; height: 56px; background: var(--ok-light); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
-        <svg width="24" height="24" fill="none" stroke="var(--ok)" stroke-width="2" viewBox="0 0 24 24">
+    <div class="py-20 px-6 text-center text-muted">
+      <div class="w-14 h-14 bg-ok-light rounded-full flex items-center justify-center mx-auto mb-4">
+        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" class="text-ok">
           <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
         </svg>
       </div>
-      <p style="font-size: 0.9rem; font-weight: 600; color: var(--text2);">Sin alertas pendientes</p>
-      <p style="font-size: 0.82rem; margin-top: 4px;">No hay alertas críticas sin atender en este momento.</p>
+      <p class="text-[0.9rem] font-semibold text-text2">Sin alertas pendientes</p>
+      <p class="text-[0.82rem] mt-1">No hay alertas críticas sin atender en este momento.</p>
     </div>
     {% endfor %}
     </div>
