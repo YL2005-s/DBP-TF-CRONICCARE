@@ -5,7 +5,7 @@ from core.models import Paciente, Metrica, Alerta, NotaClinica, PlanCuidado, Per
 class MetricaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Metrica
-        fields = '__all__'
+        fields = ['id', 'tipo', 'valor', 'alerta', 'fecha']
 
 
 class AlertaSerializer(serializers.ModelSerializer):

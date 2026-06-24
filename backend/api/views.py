@@ -98,6 +98,7 @@ def login_token(request):
             'dni': paciente.dni,
             'enfermedad': paciente.enfermedad,
             'enfermedad_display': paciente.get_enfermedad_display(),
+            'fecha_registro': paciente.fecha_registro,
         }
     except Exception:
         paciente_data = None
