@@ -40,8 +40,15 @@ def registrar_log(request, accion, paciente=None, descripcion=''):
 @login_required
 @medico_required
 def dashboard_medico(request):
+    import json
+    from collections import Counter
     from django.db.models import Prefetch
-    pacientes = Paciente.objects.prefetch_related(
+
+    q = request.GET.get('q', '').strip()
+    filtro_enfermedad = request.GET.get('enfermedad', '')
+    filtro_estado = request.GET.get('estado', '')
+
+    pacientes_qs = Paciente.objects.prefetch_related(
         Prefetch('metricas', queryset=Metrica.objects.order_by('-fecha')),
         Prefetch('alertas', queryset=Alerta.objects.filter(resuelta=False)),
     )
@@ -51,8 +58,8 @@ def dashboard_medico(request):
     ultimas_24h = ahora - timedelta(hours=24)
     ultimas_48h = ahora - timedelta(hours=48)
 
-    pacientes_list = []
-    for p in pacientes:
+    todos = []
+    for p in pacientes_qs:
         alertas_p = [a for a in p.alertas.all() if a.criticidad == 'critica' and a.fecha >= ultimas_24h]
         metricas_p = list(p.metricas.all())
         metricas_alerta = [m for m in metricas_p if m.alerta and m.fecha >= ultimas_48h]
@@ -64,25 +71,56 @@ def dashboard_medico(request):
         else:
             estado = 'estable'
 
-        pacientes_list.append({
+        todos.append({
             'paciente': p,
             'estado': estado,
             'ultima_metrica': metricas_p[0] if metricas_p else None,
         })
 
-    pacientes_seguros = sum(1 for item in pacientes_list if item['estado'] == 'estable')
-    pacientes_riesgo = sum(1 for item in pacientes_list if item['estado'] == 'riesgo')
+    pacientes_seguros = sum(1 for item in todos if item['estado'] == 'estable')
+    pacientes_riesgo = sum(1 for item in todos if item['estado'] == 'riesgo')
+    pacientes_criticos = sum(1 for item in todos if item['estado'] == 'critico')
 
-    paginator = Paginator(pacientes_list, 10)
+    enf_counter = Counter(item['paciente'].get_enfermedad_display() for item in todos)
+    enfermedades_chart_json = json.dumps([
+        {'label': k, 'count': v}
+        for k, v in sorted(enf_counter.items(), key=lambda x: -x[1])
+    ])
+
+    filtrados = todos
+    if q:
+        q_lower = q.lower()
+        filtrados = [
+            item for item in filtrados
+            if q_lower in item['paciente'].nombre.lower() or q in item['paciente'].dni
+        ]
+    if filtro_enfermedad:
+        filtrados = [item for item in filtrados if item['paciente'].enfermedad == filtro_enfermedad]
+    if filtro_estado:
+        filtrados = [item for item in filtrados if item['estado'] == filtro_estado]
+
+    paginator = Paginator(filtrados, 10)
     page_obj = paginator.get_page(request.GET.get('page', 1))
 
+    params = request.GET.copy()
+    params.pop('page', None)
+    filtros_qs = params.urlencode()
+
     return render(request, 'core/dashboard.html', {
-        'pacientes': pacientes,
+        'pacientes': pacientes_qs,
         'pacientes_list': page_obj,
         'page_obj': page_obj,
         'alertas_count': alertas_criticas,
         'pacientes_seguros': pacientes_seguros,
         'pacientes_riesgo': pacientes_riesgo,
+        'pacientes_criticos': pacientes_criticos,
+        'enfermedades_chart_json': enfermedades_chart_json,
+        'q': q,
+        'filtro_enfermedad': filtro_enfermedad,
+        'filtro_estado': filtro_estado,
+        'enfermedades_choices': Paciente.ENFERMEDADES,
+        'hay_filtros': bool(q or filtro_enfermedad or filtro_estado),
+        'filtros_qs': filtros_qs,
     })
 
 
@@ -195,22 +233,55 @@ def detalle_paciente(request, paciente_id):
     periodo = request.GET.get('periodo', '10')
     ahora = timezone.now()
 
+    _tipo_default = {
+        'diabetes_t2': 'glucosa', 'diabetes_t1': 'glucosa',
+        'hipertension': 'presion', 'asma': 'saturacion',
+        'epoc': 'saturacion', 'irc': 'presion',
+        'icc': 'frecuencia', 'artritis': 'frecuencia',
+    }
+    tipo_grafica = request.GET.get('tipo', '') or _tipo_default.get(paciente.enfermedad, 'glucosa')
+
+    TIPOS_DISPLAY_GRAFICA = [
+        ('glucosa', 'Glucosa'), ('presion', 'Presión'), ('saturacion', 'Saturación'), ('frecuencia', 'F. Cardíaca'),
+    ]
+    tipos_disponibles = [
+        {'tipo': t, 'label': l, 'count': paciente.metricas.filter(tipo=t).count()}
+        for t, l in TIPOS_DISPLAY_GRAFICA
+    ]
+
     if periodo == 'semana':
         desde = ahora - timedelta(days=7)
-        metricas_grafica = paciente.metricas.filter(fecha__gte=desde).order_by('fecha')
+        metricas_grafica = list(paciente.metricas.filter(tipo=tipo_grafica, fecha__gte=desde).order_by('fecha'))
         periodo_label = 'Últimos 7 días'
     elif periodo == 'mes':
         desde = ahora - timedelta(days=30)
-        metricas_grafica = paciente.metricas.filter(fecha__gte=desde).order_by('fecha')
+        metricas_grafica = list(paciente.metricas.filter(tipo=tipo_grafica, fecha__gte=desde).order_by('fecha'))
         periodo_label = 'Últimos 30 días'
     else:
         periodo = '10'
-        metricas_grafica = list(paciente.metricas.order_by('-fecha')[:10])[::-1]
+        metricas_grafica = list(paciente.metricas.filter(tipo=tipo_grafica).order_by('-fecha')[:10])[::-1]
         periodo_label = 'Últimas 10 mediciones'
 
     labels = [m.fecha.strftime('%d/%m %H:%M') for m in metricas_grafica]
     valores = [float(m.valor) for m in metricas_grafica]
     alertas = [m.alerta for m in metricas_grafica]
+
+    umbral_min = None
+    umbral_max = None
+    umbral_custom = paciente.umbrales.filter(tipo_metrica=tipo_grafica).first()
+    if umbral_custom:
+        umbral_min = umbral_custom.valor_min
+        umbral_max = umbral_custom.valor_max
+    else:
+        _h = Metrica.UMBRALES.get(paciente.enfermedad)
+        if _h and _h['tipo'] == tipo_grafica:
+            umbral_min = _h['min']
+            umbral_max = _h['max']
+
+    tendencia = None
+    if len(valores) >= 2 and valores[0] != 0:
+        cambio = round((valores[-1] - valores[0]) / valores[0] * 100, 1)
+        tendencia = {'pct': abs(cambio), 'sube': cambio > 0, 'neutro': cambio == 0}
 
     return render(request, 'core/detalle_paciente.html', {
         'paciente': paciente,
@@ -227,6 +298,11 @@ def detalle_paciente(request, paciente_id):
         'periodo': periodo,
         'periodo_label': periodo_label,
         'total_grafica': len(labels),
+        'tipo_grafica': tipo_grafica,
+        'tipos_disponibles': tipos_disponibles,
+        'umbral_min': umbral_min,
+        'umbral_max': umbral_max,
+        'tendencia': tendencia,
     })
 
 
@@ -307,29 +383,72 @@ def reporte_general_pdf(request):
 @login_required
 @medico_required
 def bandeja_alertas(request):
+    filtro_criticidad = request.GET.get('criticidad', '')
+    filtro_enfermedad = request.GET.get('enfermedad', '')
+
     alertas_raw = Alerta.objects.filter(
         resuelta=False
     ).select_related('paciente', 'metrica').order_by('-fecha')
 
+    if filtro_criticidad:
+        alertas_raw = alertas_raw.filter(criticidad=filtro_criticidad)
+    if filtro_enfermedad:
+        alertas_raw = alertas_raw.filter(paciente__enfermedad=filtro_enfermedad)
+
+    _unidades = {'glucosa': 'mg/dL', 'presion': 'mmHg', 'saturacion': '%', 'frecuencia': 'lpm'}
+
     alertas_formateadas = []
     for a in alertas_raw:
         valor_str = f"{float(a.metrica.valor):.1f}" if a.metrica else None
+        umbral_str = None
+        if a.metrica:
+            umbral = Metrica.UMBRALES.get(a.paciente.enfermedad)
+            if umbral and umbral.get('tipo') == a.metrica.tipo:
+                unidad = _unidades.get(a.metrica.tipo, '')
+                val = float(a.metrica.valor)
+                if umbral.get('max') is not None and val > umbral['max']:
+                    umbral_str = f"Umbral máx: {umbral['max']} {unidad}"
+                elif umbral.get('min') is not None and val < umbral['min']:
+                    umbral_str = f"Umbral mín: {umbral['min']} {unidad}"
         alertas_formateadas.append({
             'alerta': a,
             'valor_str': valor_str,
             'fecha_str': a.fecha.strftime('%d/%m %H:%M'),
+            'umbral_str': umbral_str,
         })
 
-    return render(request, 'core/alertas.html', {'alertas': alertas_formateadas})
+    return render(request, 'core/alertas.html', {
+        'alertas': alertas_formateadas,
+        'filtro_criticidad': filtro_criticidad,
+        'filtro_enfermedad': filtro_enfermedad,
+        'enfermedades_choices': Paciente.ENFERMEDADES,
+        'criticidad_choices': Alerta.CRITICIDAD,
+    })
 
 
 @login_required
 @medico_required
 def resolver_alerta(request, alerta_id):
     if request.method == 'POST':
+        import json as _json
         alerta = get_object_or_404(Alerta, pk=alerta_id)
         alerta.resuelta = True
         alerta.save()
+
+        nota_texto = ''
+        if request.headers.get('Content-Type') == 'application/json':
+            try:
+                nota_texto = _json.loads(request.body).get('nota', '').strip()
+            except Exception:
+                pass
+
+        if nota_texto:
+            NotaClinica.objects.create(
+                paciente=alerta.paciente,
+                medico=request.user,
+                texto=f"[Alerta resuelta] {nota_texto}",
+            )
+
         registrar_log(
             request,
             accion='marcar_alerta',
@@ -355,10 +474,14 @@ def conteo_alertas_json(request):
         'metricas', 'alertas'
     )
 
+    from collections import Counter
+
     total = 0
     estables = 0
     observacion = 0
+    criticos = 0
     criticas = Alerta.objects.filter(resuelta=False, criticidad='critica').count()
+    enf_counter = Counter()
 
     for p in pacientes:
         total += 1
@@ -367,22 +490,26 @@ def conteo_alertas_json(request):
         metricas_alerta = [m for m in metricas_p if m.alerta and m.fecha >= ultimas_48h]
 
         if alertas_p:
-            estado = 'critico'
+            criticos += 1
         elif len(metricas_alerta) >= 2:
-            estado = 'riesgo'
-        else:
-            estado = 'estable'
-
-        if estado == 'estable':
-            estables += 1
-        elif estado == 'riesgo':
             observacion += 1
+        else:
+            estables += 1
+
+        enf_counter[p.get_enfermedad_display()] += 1
+
+    enfermedades = [
+        {'label': k, 'count': v}
+        for k, v in sorted(enf_counter.items(), key=lambda x: -x[1])
+    ]
 
     return JsonResponse({
         'total': total,
         'estables': estables,
         'observacion': observacion,
+        'criticos': criticos,
         'criticas': criticas,
+        'enfermedades': enfermedades,
     })
 
 

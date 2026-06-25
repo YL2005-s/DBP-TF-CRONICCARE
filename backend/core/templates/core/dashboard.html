@@ -9,7 +9,7 @@
     <div class="text-[0.78rem] text-muted font-medium">{% now "d \d\e F \d\e Y" %}</div>
   </header>
 
-  <div class="grid grid-cols-4 gap-5 mb-9">
+  <div class="grid grid-cols-4 gap-5 mb-7">
     <div class="bg-surface rounded-xl border border-border border-l-4 border-l-primary shadow-sm p-6 flex flex-col gap-4 transition-all duration-200 hover:shadow-md">
       <div class="flex items-start justify-between">
         <div>
@@ -74,6 +74,43 @@
     </div>
   </div>
 
+  {% if pacientes.count > 0 %}
+  <div class="grid grid-cols-2 gap-5 mb-7">
+    <div class="bg-surface rounded-xl border border-border shadow-sm p-5">
+      <p class="text-[0.72rem] text-muted font-semibold uppercase tracking-[0.08em] mb-4">Estado de Pacientes</p>
+      <div class="flex items-center gap-6">
+        <div class="shrink-0" style="width:130px;height:130px;">
+          <canvas id="chart-estado"></canvas>
+        </div>
+        <div class="flex flex-col gap-2.5 text-[0.8rem]">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-ok shrink-0"></span>
+            <span class="text-muted">Estable</span>
+            <span class="font-bold text-text ml-auto pl-4">{{ pacientes_seguros }}</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-warning shrink-0"></span>
+            <span class="text-muted">Observación</span>
+            <span class="font-bold text-text ml-auto pl-4">{{ pacientes_riesgo }}</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-alert shrink-0"></span>
+            <span class="text-muted">Crítico</span>
+            <span class="font-bold text-text ml-auto pl-4">{{ pacientes_criticos }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-surface rounded-xl border border-border shadow-sm p-5">
+      <p class="text-[0.72rem] text-muted font-semibold uppercase tracking-[0.08em] mb-4">Distribución por Enfermedad</p>
+      <div style="height:130px;">
+        <canvas id="chart-enfermedades"></canvas>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
   {% if alertas_recientes %}
   <div class="bg-alert-light border border-alert/30 rounded-xl p-5 mb-7 flex items-start gap-4">
     <div class="w-10 h-10 rounded-xl bg-alert flex items-center justify-center shrink-0 mt-0.5">
@@ -116,17 +153,41 @@
   {% endif %}
 
   <div>
-    <div class="bg-surface rounded-xl border border-border shadow-sm overflow-hidden">
+    <div id="tabla-pacientes" class="bg-surface rounded-xl border border-border shadow-sm overflow-hidden">
       <div class="px-6 py-5 border-b border-border flex items-center justify-between gap-4">
         <div>
           <h3 class="text-[0.95rem] font-bold text-text">Seguimiento Clínico</h3>
-          <p class="text-[0.78rem] text-muted mt-0.5">Lista de pacientes activos</p>
+          <p class="text-[0.78rem] text-muted mt-0.5">
+            {% if hay_filtros %}{{ page_obj.paginator.count }} resultado{% if page_obj.paginator.count != 1 %}s{% endif %} · <a href="{% url 'dashboard' %}" class="text-primary no-underline hover:underline" data-ajax data-reset-form>Limpiar filtros</a>{% else %}Lista de pacientes activos{% endif %}
+          </p>
         </div>
         <div class="flex items-center gap-2">
           <a href="{% url 'registrar' %}" class="bg-primary text-white px-4 py-2 rounded-lg font-semibold text-[0.78rem] no-underline hover:bg-primary-dark transition-colors duration-150 whitespace-nowrap">+ Nuevo paciente</a>
           <a href="{% url 'reporte_general' %}" class="bg-transparent text-primary border-[1.5px] border-primary px-4 py-2 rounded-lg font-semibold text-[0.78rem] no-underline hover:bg-primary-light transition-colors duration-150 whitespace-nowrap">Reporte PDF</a>
         </div>
       </div>
+
+      <form id="form-filtros" method="get" class="flex items-center gap-2.5 px-5 py-3 border-b border-border bg-bg flex-wrap">
+        <div class="relative flex-1 min-w-45">
+          <input type="text" name="q" value="{{ q }}" placeholder="Buscar por nombre o DNI…"
+                 class="w-full pl-8 pr-3 py-1.5 text-[0.8rem] bg-surface border border-border rounded-lg focus:outline-none focus:border-primary text-text placeholder:text-muted">
+        </div>
+        <select name="enfermedad"
+                class="text-[0.78rem] bg-surface border border-border rounded-lg px-2.5 py-1.5 text-text focus:outline-none focus:border-primary cursor-pointer">
+          <option value="">Todas las enfermedades</option>
+          {% for val, label in enfermedades_choices %}
+          <option value="{{ val }}" {% if filtro_enfermedad == val %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+        <select name="estado"
+                class="text-[0.78rem] bg-surface border border-border rounded-lg px-2.5 py-1.5 text-text focus:outline-none focus:border-primary cursor-pointer">
+          <option value="">Todos los estados</option>
+          <option value="estable" {% if filtro_estado == 'estable' %}selected{% endif %}>Estable</option>
+          <option value="riesgo" {% if filtro_estado == 'riesgo' %}selected{% endif %}>En observación</option>
+          <option value="critico" {% if filtro_estado == 'critico' %}selected{% endif %}>Crítico</option>
+        </select>
+        <button type="submit" class="px-3 py-1.5 bg-primary text-white rounded-lg text-[0.78rem] font-semibold hover:bg-primary-dark transition-colors duration-150">Buscar</button>
+      </form>
 
       <div class="flex items-center gap-4 px-5 py-2 border-b border-border bg-bg text-[0.72rem] text-muted font-medium">
         <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-alert inline-block shrink-0"></span>Crítico</span>
@@ -175,7 +236,7 @@
           </div>
           {% empty %}
           <div class="py-16 px-6 text-center text-muted text-[0.85rem]">
-            No hay pacientes registrados.
+            {% if hay_filtros %}No se encontraron pacientes con esos filtros.{% else %}No hay pacientes registrados.{% endif %}
           </div>
           {% endfor %}
         </div>
@@ -189,28 +250,85 @@
         </span>
         <div class="flex gap-1">
           {% if page_obj.has_previous %}
-          <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-1.5 rounded-lg border border-border text-[0.78rem] font-semibold text-text2 no-underline hover:bg-bg transition-colors duration-150">← Anterior</a>
+          <a data-ajax href="{% if filtros_qs %}?{{ filtros_qs }}&page={{ page_obj.previous_page_number }}{% else %}?page={{ page_obj.previous_page_number }}{% endif %}" class="px-3 py-1.5 rounded-lg border border-border text-[0.78rem] font-semibold text-text2 no-underline hover:bg-bg transition-colors duration-150">← Anterior</a>
           {% endif %}
           {% for num in page_obj.paginator.page_range %}
           {% if num == page_obj.number %}
           <span class="px-3 py-1.5 rounded-lg bg-primary text-white text-[0.78rem] font-bold">{{ num }}</span>
           {% elif num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
-          <a href="?page={{ num }}" class="px-3 py-1.5 rounded-lg border border-border text-[0.78rem] font-semibold text-text2 no-underline hover:bg-bg transition-colors duration-150">{{ num }}</a>
+          <a data-ajax href="{% if filtros_qs %}?{{ filtros_qs }}&page={{ num }}{% else %}?page={{ num }}{% endif %}" class="px-3 py-1.5 rounded-lg border border-border text-[0.78rem] font-semibold text-text2 no-underline hover:bg-bg transition-colors duration-150">{{ num }}</a>
           {% endif %}
           {% endfor %}
           {% if page_obj.has_next %}
-          <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-1.5 rounded-lg border border-border text-[0.78rem] font-semibold text-text2 no-underline hover:bg-bg transition-colors duration-150">Siguiente →</a>
+          <a data-ajax href="{% if filtros_qs %}?{{ filtros_qs }}&page={{ page_obj.next_page_number }}{% else %}?page={{ page_obj.next_page_number }}{% endif %}" class="px-3 py-1.5 rounded-lg border border-border text-[0.78rem] font-semibold text-text2 no-underline hover:bg-bg transition-colors duration-150">Siguiente →</a>
           {% endif %}
         </div>
       </div>
       {% endif %}
 
     </div>
-
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script>
+
+let chartEstado = null;
+let chartEnf = null;
+
+const canvasEstado = document.getElementById('chart-estado');
+if (canvasEstado) {
+  chartEstado = new Chart(canvasEstado, {
+    type: 'doughnut',
+    data: {
+      labels: ['Estable', 'Observación', 'Crítico'],
+      datasets: [{
+        data: [{{ pacientes_seguros }}, {{ pacientes_riesgo }}, {{ pacientes_criticos }}],
+        backgroundColor: ['#16a34a', '#d97706', '#dc2626'],
+        borderWidth: 0,
+        hoverOffset: 4,
+      }]
+    },
+    options: {
+      cutout: '68%',
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: { legend: { display: false }, tooltip: { callbacks: {
+        label: ctx => ` ${ctx.label}: ${ctx.parsed}`
+      }}},
+    }
+  });
+}
+
+const enfermedadesData = {{ enfermedades_chart_json|safe }};
+const canvasEnf = document.getElementById('chart-enfermedades');
+if (canvasEnf && enfermedadesData.length) {
+  chartEnf = new Chart(canvasEnf, {
+    type: 'bar',
+    data: {
+      labels: enfermedadesData.map(d => d.label),
+      datasets: [{
+        data: enfermedadesData.map(d => d.count),
+        backgroundColor: '#1e40af',
+        borderRadius: 4,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: {
+        label: ctx => ` ${ctx.parsed.x} paciente${ctx.parsed.x !== 1 ? 's' : ''}`
+      }}},
+      scales: {
+        x: { ticks: { font: { size: 11 }, color: '#64748b', stepSize: 1 }, grid: { color: '#e2e8f0' }, border: { display: false } },
+        y: { ticks: { font: { size: 11 }, color: '#64748b' }, grid: { display: false }, border: { display: false } }
+      }
+    }
+  });
+}
+
 let estadoAnterior = {
   total: Number("{{ pacientes.count|default:0 }}"),
   estables: Number("{{ pacientes_seguros|default:0 }}"),
@@ -229,7 +347,7 @@ function actualizarKPIs() {
     .then(data => {
       set('kpi-total', data.total);
       set('kpi-estables', data.estables);
-      set('kpi-observacion',data.observacion);
+      set('kpi-observacion', data.observacion);
 
       const pct = document.getElementById('kpi-estables-pct');
       if (pct) pct.textContent = data.total > 0
@@ -246,11 +364,63 @@ function actualizarKPIs() {
         }
       }
 
+      if (chartEstado) {
+        chartEstado.data.datasets[0].data = [data.estables, data.observacion, data.criticos];
+        chartEstado.update('none');
+      }
+
+      if (chartEnf && data.enfermedades) {
+        chartEnf.data.labels = data.enfermedades.map(d => d.label);
+        chartEnf.data.datasets[0].data = data.enfermedades.map(d => d.count);
+        chartEnf.update('none');
+      }
+
       estadoAnterior = { ...data };
     })
     .catch(() => {});
 }
 
 setInterval(actualizarKPIs, 10000);
+
+async function cargarTabla(url) {
+  const tabla = document.getElementById('tabla-pacientes');
+  if (!tabla) return;
+  tabla.style.opacity = '0.5';
+  try {
+    const res = await fetch(url);
+    const html = await res.text();
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const nueva = doc.getElementById('tabla-pacientes');
+    if (nueva) {
+      tabla.innerHTML = nueva.innerHTML;
+      history.pushState(null, '', url);
+    }
+  } catch (_) {}
+  tabla.style.opacity = '1';
+}
+
+document.addEventListener('submit', e => {
+  const form = e.target.closest('#form-filtros');
+  if (!form) return;
+  e.preventDefault();
+  const params = new URLSearchParams(new FormData(form));
+  for (const [k, v] of [...params]) { if (!v) params.delete(k); }
+  cargarTabla('?' + params.toString());
+});
+
+document.addEventListener('change', e => {
+  const form = e.target.closest('#form-filtros');
+  if (!form || e.target.tagName !== 'SELECT') return;
+  form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+});
+
+document.addEventListener('click', e => {
+  const link = e.target.closest('[data-ajax]');
+  if (!link) return;
+  e.preventDefault();
+  if (link.hasAttribute('data-reset-form')) { const f = document.getElementById('form-filtros'); if (f) f.reset(); }
+  const url = new URL(link.href, location.href);
+  cargarTabla(url.pathname + url.search);
+});
 </script>
 {% endblock %}

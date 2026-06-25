@@ -5,41 +5,82 @@
 {% block content %}
 <div class="p-10 px-12 max-w-350 mx-auto">
 
-  <header class="mb-8">
+  <header class="mb-6">
     <h1 class="font-black text-[1.75rem] tracking-wide text-text">Bandeja de Alertas</h1>
     <p class="text-muted text-[0.9rem] mt-1">Eventos detectados en tiempo real.</p>
   </header>
 
+  <!-- Filtros -->
+  <form method="GET" class="flex flex-wrap items-center gap-3 mb-6">
+    <select name="criticidad"
+      onchange="this.form.submit()"
+      class="h-9 px-3 pr-8 text-[0.82rem] font-medium bg-surface border border-border rounded-lg text-text appearance-none cursor-pointer focus:outline-none focus:border-primary transition-colors">
+      <option value="">Todas las criticidades</option>
+      {% for val, label in criticidad_choices %}
+        <option value="{{ val }}" {% if filtro_criticidad == val %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+
+    <select name="enfermedad"
+      onchange="this.form.submit()"
+      class="h-9 px-3 pr-8 text-[0.82rem] font-medium bg-surface border border-border rounded-lg text-text appearance-none cursor-pointer focus:outline-none focus:border-primary transition-colors">
+      <option value="">Todas las enfermedades</option>
+      {% for val, label in enfermedades_choices %}
+        <option value="{{ val }}" {% if filtro_enfermedad == val %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+
+    {% if filtro_criticidad or filtro_enfermedad %}
+    <a href="{% url 'alertas' %}"
+      class="h-9 px-3 text-[0.82rem] font-medium text-muted border border-border bg-surface rounded-lg flex items-center gap-1.5 no-underline hover:border-primary hover:text-primary transition-colors">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      Limpiar
+    </a>
+    {% endif %}
+
+    <span class="text-[0.82rem] text-muted ml-auto">{{ alertas|length }} alerta{{ alertas|length|pluralize:"s" }}</span>
+  </form>
+
+  <!-- Tabla -->
   <div class="bg-surface rounded-xl border border-border shadow-sm p-0 overflow-hidden">
 
-    <div class="grid px-5 py-2.5 text-[0.72rem] font-bold text-muted uppercase tracking-[0.04em] bg-bg border-b border-border" style="grid-template-columns: 1fr 1.5fr 1.2fr 1fr 130px">
-      <div>Fecha y Hora</div>
+    <div class="grid px-5 py-2.5 text-[0.72rem] font-bold text-muted uppercase tracking-[0.04em] bg-bg border-b border-border" style="grid-template-columns: 100px 1.4fr 1.5fr 1fr 140px">
+      <div>Fecha</div>
       <div>Paciente</div>
-      <div>Métrica Crítica</div>
+      <div>Métrica · Umbral</div>
       <div>Severidad</div>
       <div class="text-right">Acción</div>
     </div>
 
     <div id="tabla-alertas">
     {% for item in alertas %}
-    <div id="alerta-{{ item.alerta.id }}" class="grid px-5 py-3.5 items-center border-b border-border transition-colors duration-150 text-sm hover:bg-primary-light last:border-b-0" style="grid-template-columns: 1fr 1.5fr 1.2fr 1fr 130px">
-      <div class="font-mono text-[0.82rem] text-muted">{{ item.fecha_str }}</div>
-      <div class="font-bold">
+    <div id="alerta-{{ item.alerta.id }}" class="grid px-5 py-3.5 items-center border-b border-border transition-colors duration-150 hover:bg-primary-light last:border-b-0" style="grid-template-columns: 100px 1.4fr 1.5fr 1fr 140px">
+      <div class="font-mono text-[0.78rem] text-muted leading-tight">{{ item.fecha_str }}</div>
+
+      <div>
         <a href="{% url 'detalle_paciente' item.alerta.paciente.id %}"
-           class="text-text no-underline transition-colors duration-200 hover:text-primary">
+           class="font-bold text-text text-[0.88rem] no-underline hover:text-primary transition-colors">
           {{ item.alerta.paciente.nombre }}
         </a>
+        <div class="text-[0.75rem] text-muted mt-0.5">{{ item.alerta.paciente.get_enfermedad_display }}</div>
       </div>
-      <div class="font-mono font-semibold text-alert">
+
+      <div>
         {% if item.alerta.metrica %}
-          {{ item.alerta.metrica.get_tipo_display }}: {{ item.valor_str }}
-          {% if item.alerta.metrica.tipo == 'glucosa' %}mg/dL
-          {% elif item.alerta.metrica.tipo == 'presion' %}mmHg
-          {% elif item.alerta.metrica.tipo == 'saturacion' %}%
-          {% elif item.alerta.metrica.tipo == 'frecuencia' %}lpm
+          <span class="font-mono font-semibold text-alert text-[0.88rem]">
+            {{ item.alerta.metrica.get_tipo_display }}: {{ item.valor_str }}
+            {% if item.alerta.metrica.tipo == 'glucosa' %}mg/dL
+            {% elif item.alerta.metrica.tipo == 'presion' %}mmHg
+            {% elif item.alerta.metrica.tipo == 'saturacion' %}%
+            {% elif item.alerta.metrica.tipo == 'frecuencia' %}lpm
+            {% endif %}
+          </span>
+          {% if item.umbral_str %}
+          <div class="text-[0.73rem] text-muted mt-0.5">{{ item.umbral_str }}</div>
           {% endif %}
         {% else %}—{% endif %}
       </div>
+
       <div>
         {% if item.alerta.criticidad == 'critica' %}
         <span class="bg-alert-light text-alert px-2.5 py-0.5 rounded-full text-[0.75rem] font-semibold">{{ item.alerta.get_criticidad_display }}</span>
@@ -47,11 +88,12 @@
         <span class="bg-warning-light text-warning px-2.5 py-0.5 rounded-full text-[0.75rem] font-semibold">{{ item.alerta.get_criticidad_display }}</span>
         {% endif %}
       </div>
+
       <div class="text-right">
         <button type="button"
                 class="bg-transparent text-primary border-[1.5px] border-primary px-3 py-1.5 rounded-lg font-semibold text-[0.75rem] font-sans cursor-pointer transition-colors duration-200 hover:bg-primary-light"
-                onclick="resolverAlerta({{ item.alerta.id }})">
-          Marcar resuelta
+                onclick="abrirModal({{ item.alerta.id }}, '{{ item.alerta.paciente.nombre|escapejs }}')">
+          Resolver
         </button>
       </div>
     </div>
@@ -71,7 +113,65 @@
   </div>
 </div>
 
+<!-- Modal resolver alerta -->
+<div id="modal-resolver" class="hidden fixed inset-0 z-300 items-center justify-center p-4">
+  <div class="absolute inset-0 bg-black/40" onclick="cerrarModal()"></div>
+  <div class="relative bg-surface rounded-xl border border-border shadow-xl w-full max-w-md p-6">
+    <h3 class="font-bold text-[1rem] text-text mb-1">Resolver alerta</h3>
+    <p class="text-[0.82rem] text-muted mb-4">Paciente: <strong id="modal-paciente" class="text-text"></strong></p>
+
+    <label class="block text-[0.8rem] font-semibold text-text mb-1.5">Acción tomada <span class="text-muted font-normal">(opcional)</span></label>
+    <textarea id="modal-nota"
+      rows="3"
+      placeholder="Ej: Se contactó al paciente, se ajustó dosis de metformina..."
+      class="w-full px-3 py-2.5 text-[0.85rem] bg-bg border border-border rounded-lg text-text resize-none focus:outline-none focus:border-primary transition-colors font-sans"
+    ></textarea>
+    <p class="text-[0.73rem] text-muted mt-1.5">Si escribes algo, se guardará como nota clínica en el expediente del paciente.</p>
+
+    <div class="flex gap-3 mt-5">
+      <button type="button" onclick="confirmarResolver()"
+        class="flex-1 bg-primary text-white border-0 px-4 py-2.5 rounded-lg font-semibold text-[0.85rem] font-sans cursor-pointer hover:opacity-90 transition-opacity">
+        Confirmar
+      </button>
+      <button type="button" onclick="cerrarModal()"
+        class="px-4 py-2.5 border border-border bg-transparent text-text rounded-lg font-semibold text-[0.85rem] font-sans cursor-pointer hover:border-primary hover:text-primary transition-colors">
+        Cancelar
+      </button>
+    </div>
+  </div>
+</div>
+
 <script>
+let _alertaId = null;
+
+function abrirModal(id, paciente) {
+  _alertaId = id;
+  document.getElementById('modal-paciente').textContent = paciente;
+  document.getElementById('modal-nota').value = '';
+  const modal = document.getElementById('modal-resolver');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+  setTimeout(() => document.getElementById('modal-nota').focus(), 50);
+}
+
+function cerrarModal() {
+  _alertaId = null;
+  const modal = document.getElementById('modal-resolver');
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+}
+
+function confirmarResolver() {
+  if (!_alertaId) return;
+  const nota = document.getElementById('modal-nota').value.trim();
+  resolverAlerta(_alertaId, nota);
+  cerrarModal();
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') cerrarModal();
+});
+
 function getCookie(name) {
   let cookieValue = null;
   if (document.cookie && document.cookie !== '') {
@@ -87,7 +187,7 @@ function getCookie(name) {
   return cookieValue;
 }
 
-function resolverAlerta(id) {
+function resolverAlerta(id, nota) {
   const fila = document.getElementById('alerta-' + id);
   if (!fila) return;
 
@@ -100,28 +200,37 @@ function resolverAlerta(id) {
     headers: {
       'X-CSRFToken': getCookie('csrftoken'),
       'Content-Type': 'application/json',
-    }
+    },
+    body: JSON.stringify({ nota }),
   })
   .then(response => {
     if (response.ok || response.redirected) {
       fila.style.opacity = '0';
       fila.style.maxHeight = fila.offsetHeight + 'px';
       fila.style.overflow = 'hidden';
-
       setTimeout(() => {
         fila.style.maxHeight = '0';
         fila.style.padding = '0';
         fila.style.margin = '0';
       }, 400);
-
       setTimeout(() => {
         fila.remove();
         const tabla = document.getElementById('tabla-alertas');
-        if (tabla && tabla.querySelectorAll('.table-row').length === 0) {
+        if (tabla && tabla.querySelectorAll('[id^="alerta-"]').length === 0) {
           tabla.innerHTML = `
-            <div style="padding: 60px 24px; text-align: center; color: var(--muted); font-size: 0.85rem;">
-              🛡️ No hay alertas críticas pendientes.
+            <div class="py-20 px-6 text-center text-muted">
+              <div class="w-14 h-14 bg-ok-light rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" class="text-ok"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              </div>
+              <p class="text-[0.9rem] font-semibold text-text2">Sin alertas pendientes</p>
+              <p class="text-[0.82rem] mt-1">No hay alertas críticas sin atender en este momento.</p>
             </div>`;
+          const contador = document.querySelector('span[class*="text-muted ml-auto"]');
+          if (contador) contador.textContent = '0 alertas';
+        } else {
+          const resto = tabla.querySelectorAll('[id^="alerta-"]').length;
+          const contador = document.querySelector('.flex.flex-wrap span.text-muted.ml-auto');
+          if (contador) contador.textContent = `${resto} alerta${resto !== 1 ? 's' : ''}`;
         }
       }, 800);
     } else {

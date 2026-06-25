@@ -99,24 +99,43 @@
         </button>
       </div>
 
-      <!-- Panel: Evolución -->
       <div id="panel-evolucion" class="p-6">
+        <div class="flex gap-2 mb-4 flex-wrap">
+          {% for t in tipos_disponibles %}
+          <a href="?tipo={{ t.tipo }}&periodo={{ periodo }}"
+             class="no-underline px-3 py-1.5 rounded-lg font-semibold text-[0.73rem] font-sans border-[1.5px] transition-colors duration-150 {% if tipo_grafica == t.tipo %}bg-primary text-white border-primary{% else %}bg-transparent text-muted border-border hover:border-primary hover:text-primary{% endif %}">
+            {{ t.label }}{% if t.count %}<span class="ml-1 opacity-60">{{ t.count }}</span>{% endif %}
+          </a>
+          {% endfor %}
+        </div>
         <div class="flex items-center justify-between mb-5">
-          <p class="text-[0.8rem] text-muted">{{ periodo_label }} · {{ total_grafica }} registro{{ total_grafica|pluralize:"s" }}</p>
+          <div class="flex items-center gap-3">
+            <p class="text-[0.8rem] text-muted">{{ periodo_label }} · {{ total_grafica }} registro{{ total_grafica|pluralize:"s" }}</p>
+            {% if tendencia %}
+            <span class="inline-flex items-center gap-1 text-[0.75rem] font-semibold px-2 py-0.5 rounded-full
+              {% if tendencia.neutro %}bg-border text-muted
+              {% elif tendencia.sube %}bg-alert-light text-alert
+              {% else %}bg-ok-light text-ok{% endif %}">
+              {% if tendencia.sube %}↑{% elif tendencia.neutro %}→{% else %}↓{% endif %}
+              {{ tendencia.pct }}%
+            </span>
+            {% endif %}
+          </div>
           <div class="flex gap-1.5">
-            <a href="?periodo=10" class="no-underline px-3 py-1.5 rounded-lg font-semibold text-[0.73rem] font-sans border-[1.5px] {% if periodo == '10' %}bg-primary text-white border-primary{% else %}bg-transparent text-primary border-primary hover:bg-primary-light{% endif %}">Últimas 10</a>
-            <a href="?periodo=semana" class="no-underline px-3 py-1.5 rounded-lg font-semibold text-[0.73rem] font-sans border-[1.5px] {% if periodo == 'semana' %}bg-primary text-white border-primary{% else %}bg-transparent text-primary border-primary hover:bg-primary-light{% endif %}">Esta semana</a>
-            <a href="?periodo=mes" class="no-underline px-3 py-1.5 rounded-lg font-semibold text-[0.73rem] font-sans border-[1.5px] {% if periodo == 'mes' %}bg-primary text-white border-primary{% else %}bg-transparent text-primary border-primary hover:bg-primary-light{% endif %}">Este mes</a>
+            <a href="?periodo=10&tipo={{ tipo_grafica }}" class="no-underline px-3 py-1.5 rounded-lg font-semibold text-[0.73rem] font-sans border-[1.5px] {% if periodo == '10' %}bg-primary text-white border-primary{% else %}bg-transparent text-primary border-primary hover:bg-primary-light{% endif %}">Últimas 10</a>
+            <a href="?periodo=semana&tipo={{ tipo_grafica }}" class="no-underline px-3 py-1.5 rounded-lg font-semibold text-[0.73rem] font-sans border-[1.5px] {% if periodo == 'semana' %}bg-primary text-white border-primary{% else %}bg-transparent text-primary border-primary hover:bg-primary-light{% endif %}">Esta semana</a>
+            <a href="?periodo=mes&tipo={{ tipo_grafica }}" class="no-underline px-3 py-1.5 rounded-lg font-semibold text-[0.73rem] font-sans border-[1.5px] {% if periodo == 'mes' %}bg-primary text-white border-primary{% else %}bg-transparent text-primary border-primary hover:bg-primary-light{% endif %}">Este mes</a>
           </div>
         </div>
         {% if total_grafica == 0 %}
         <div class="py-16 px-6 text-center text-muted text-[0.85rem]">No hay mediciones registradas en este período.</div>
         {% else %}
         <canvas id="graficaMetricas" height="90"></canvas>
-        <div class="flex gap-5 items-center mt-3.5 text-[0.78rem] text-muted">
-          <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-ok inline-block"></span>Valor normal</span>
-          <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-alert inline-block"></span>Valor en alerta</span>
-          <span class="flex items-center gap-1.5"><span class="w-5 h-0.5 border-t-2 border-dashed border-alert inline-block"></span>Umbral clínico</span>
+        <div class="flex gap-5 items-center mt-3.5 text-[0.78rem] text-muted flex-wrap">
+          <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-ok inline-block"></span>Normal</span>
+          <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-alert inline-block"></span>En alerta</span>
+          {% if umbral_max %}<span class="flex items-center gap-1.5"><span class="w-5 h-0.5 border-t-2 border-dashed border-alert inline-block"></span>Umbral máx.</span>{% endif %}
+          {% if umbral_min %}<span class="flex items-center gap-1.5"><span class="w-5 h-0.5 border-t-2 border-dashed border-warning inline-block"></span>Umbral mín.</span>{% endif %}
         </div>
         {% endif %}
       </div>
@@ -299,11 +318,12 @@
   const alertas = JSON.parse(document.getElementById('chart-alertas').textContent);
   const colores = alertas.map(a => a ? '#DC2626' : '#16A34A');
 
-  const enfermedad = '{{ paciente.enfermedad }}';
-  let umbral = null, labelUmbral = 'Umbral de alerta';
-  if (enfermedad === 'diabetes_t2')  { umbral = 126; labelUmbral = 'Umbral glucosa (126 mg/dL)'; }
-  if (enfermedad === 'hipertension') { umbral = 140; labelUmbral = 'Umbral presión (140 mmHg)'; }
-  if (enfermedad === 'asma') { umbral = 90;  labelUmbral = 'Umbral saturación (90%)'; }
+  const umbralMin = {{ umbral_min|default:"null" }};
+  const umbralMax = {{ umbral_max|default:"null" }};
+
+  const UNIDADES = { glucosa: 'mg/dL', presion: 'mmHg', saturacion: '%', frecuencia: 'lpm' };
+  const tipoGrafica = '{{ tipo_grafica }}';
+  const unidad = UNIDADES[tipoGrafica] || '';
 
   const datasets = [{
     label: 'Medición',
@@ -319,17 +339,20 @@
     pointHoverRadius: 8,
   }];
 
-  if (umbral !== null && labels.length > 0) {
+  if (umbralMax !== null && labels.length > 0) {
     datasets.push({
-      label: labelUmbral,
-      data: Array(labels.length).fill(umbral),
-      type: 'line',
-      borderColor: '#DC2626',
-      borderDash: [6, 4],
-      borderWidth: 1.5,
-      pointRadius: 0,
-      fill: false,
-      tension: 0,
+      label: `Umbral máx. (${umbralMax} ${unidad})`,
+      data: Array(labels.length).fill(umbralMax),
+      type: 'line', borderColor: '#DC2626', borderDash: [6, 4],
+      borderWidth: 1.5, pointRadius: 0, fill: false, tension: 0,
+    });
+  }
+  if (umbralMin !== null && labels.length > 0) {
+    datasets.push({
+      label: `Umbral mín. (${umbralMin} ${unidad})`,
+      data: Array(labels.length).fill(umbralMin),
+      type: 'line', borderColor: '#D97706', borderDash: [4, 3],
+      borderWidth: 1.5, pointRadius: 0, fill: false, tension: 0,
     });
   }
 
