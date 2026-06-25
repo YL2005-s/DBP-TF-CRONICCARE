@@ -114,9 +114,9 @@
 </div>
 
 <!-- Modal resolver alerta -->
-<div id="modal-resolver" class="hidden fixed inset-0 z-300 items-center justify-center p-4">
-  <div class="absolute inset-0 bg-black/40" onclick="cerrarModal()"></div>
-  <div class="relative bg-surface rounded-xl border border-border shadow-xl w-full max-w-md p-6">
+<div id="modal-resolver" style="display:none" class="fixed inset-0 z-300 flex items-center justify-center p-4">
+  <div class="absolute inset-0 bg-black/40" style="z-index:1" onclick="cerrarModal()"></div>
+  <div class="bg-surface rounded-xl border border-border shadow-xl w-full max-w-md p-6" style="position:relative;z-index:2">
     <h3 class="font-bold text-[1rem] text-text mb-1">Resolver alerta</h3>
     <p class="text-[0.82rem] text-muted mb-4">Paciente: <strong id="modal-paciente" class="text-text"></strong></p>
 
@@ -148,17 +148,13 @@ function abrirModal(id, paciente) {
   _alertaId = id;
   document.getElementById('modal-paciente').textContent = paciente;
   document.getElementById('modal-nota').value = '';
-  const modal = document.getElementById('modal-resolver');
-  modal.classList.remove('hidden');
-  modal.classList.add('flex');
+  document.getElementById('modal-resolver').style.display = 'flex';
   setTimeout(() => document.getElementById('modal-nota').focus(), 50);
 }
 
 function cerrarModal() {
   _alertaId = null;
-  const modal = document.getElementById('modal-resolver');
-  modal.classList.add('hidden');
-  modal.classList.remove('flex');
+  document.getElementById('modal-resolver').style.display = 'none';
 }
 
 function confirmarResolver() {
