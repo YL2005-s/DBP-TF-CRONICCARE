@@ -19,7 +19,7 @@
     <h2 class="font-bold text-[1.2rem] tracking-wide text-text mb-2">Acceso al Sistema</h2>
     <p class="text-[0.8rem] text-muted mb-6">Ingrese su DNI y contraseña para acceder al sistema.</p>
 
-    {% if form.errors %}
+    {% if form.errors or solo_app %}
     <div class="mb-5 p-3 px-4 rounded-lg bg-alert-light border border-[#fca5a5] flex items-start gap-2.5">
       <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" class="shrink-0 mt-px text-alert">
         <circle cx="12" cy="12" r="10"/>
@@ -27,8 +27,13 @@
         <line x1="12" y1="16" x2="12.01" y2="16"/>
       </svg>
       <div>
+        {% if solo_app %}
+        <p class="text-alert text-[0.8rem] font-bold mb-0.5">Acceso no permitido</p>
+        <p class="text-alert text-[0.75rem] opacity-85">Esta plataforma es exclusiva para médicos. Los pacientes deben ingresar por la app móvil.</p>
+        {% else %}
         <p class="text-alert text-[0.8rem] font-bold mb-0.5">DNI o contraseña incorrectos</p>
-        <p class="text-alert text-[0.75rem] opacity-85">DNI o contraseña incorrectos. Verifique sus credenciales.</p>
+        <p class="text-alert text-[0.75rem] opacity-85">Verifique sus credenciales e intente nuevamente.</p>
+        {% endif %}
       </div>
     </div>
     {% endif %}

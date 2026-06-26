@@ -1,0 +1,292 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Ayuda{% endblock %}
+
+{% block content %}
+<div class="p-10 px-12 max-w-350 mx-auto">
+
+  <div class="mb-7">
+    <h1 class="font-black text-[1.75rem] tracking-wide text-text">Centro de Ayuda</h1>
+    <p class="text-muted text-[0.9rem] mt-1">Guías y preguntas frecuentes para médicos</p>
+  </div>
+
+  {# Quick links #}
+  <div class="flex gap-4 mb-9">
+    <a href="#guia-inicio" class="flex-1 no-underline bg-surface border border-border rounded-xl p-5 flex items-start gap-4 hover:border-primary/40 hover:shadow-sm transition-all duration-150 group">
+      <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+        <svg class="w-5 h-5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+        </svg>
+      </div>
+      <div>
+        <p class="font-semibold text-[0.9rem] text-text mb-0.5 group-hover:text-primary transition-colors">Primeros pasos</p>
+        <p class="text-muted text-[0.78rem]">Cómo registrar pacientes y empezar a monitorear</p>
+      </div>
+    </a>
+
+    <a href="#guia-metricas" class="flex-1 no-underline bg-surface border border-border rounded-xl p-5 flex items-start gap-4 hover:border-primary/40 hover:shadow-sm transition-all duration-150 group">
+      <div class="w-10 h-10 rounded-lg bg-ok/10 flex items-center justify-center shrink-0">
+        <svg class="w-5 h-5 text-ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+        </svg>
+      </div>
+      <div>
+        <p class="font-semibold text-[0.9rem] text-text mb-0.5 group-hover:text-primary transition-colors">Métricas y alertas</p>
+        <p class="text-muted text-[0.78rem]">Umbrales, criticidad y cómo resolver alertas</p>
+      </div>
+    </a>
+
+    <a href="#faq" class="flex-1 no-underline bg-surface border border-border rounded-xl p-5 flex items-start gap-4 hover:border-primary/40 hover:shadow-sm transition-all duration-150 group">
+      <div class="w-10 h-10 rounded-lg bg-warning/10 flex items-center justify-center shrink-0">
+        <svg class="w-5 h-5 text-warning" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+      </div>
+      <div>
+        <p class="font-semibold text-[0.9rem] text-text mb-0.5 group-hover:text-primary transition-colors">Preguntas frecuentes</p>
+        <p class="text-muted text-[0.78rem]">Respuestas a las dudas más comunes</p>
+      </div>
+    </a>
+  </div>
+
+  {# Guía de inicio #}
+  <section id="guia-inicio" class="mb-9">
+    <div class="flex items-center gap-3 mb-5">
+      <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+        <svg class="w-4 h-4 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+        </svg>
+      </div>
+      <h2 class="text-[1.15rem] font-bold text-text">Primeros pasos</h2>
+    </div>
+
+    <div class="grid grid-cols-2 gap-4">
+
+      <div class="bg-surface border border-border rounded-xl p-6">
+        <div class="flex items-center gap-2.5 mb-4">
+          <span class="w-6 h-6 rounded-full bg-primary text-white text-[0.7rem] font-bold flex items-center justify-center shrink-0">1</span>
+          <h3 class="font-semibold text-[0.9rem] text-text">Registrar un paciente</h3>
+        </div>
+        <ol class="text-[0.82rem] text-muted space-y-2 list-none pl-0">
+          <li class="flex gap-2"><span class="text-primary font-bold shrink-0">→</span> Ir a <strong class="text-text">Dashboard → botón "Nuevo Paciente"</strong></li>
+          <li class="flex gap-2"><span class="text-primary font-bold shrink-0">→</span> Completar nombre, DNI (8 dígitos) y enfermedad crónica</li>
+          <li class="flex gap-2"><span class="text-primary font-bold shrink-0">→</span> El sistema genera usuario y contraseña temporal automáticamente</li>
+          <li class="flex gap-2"><span class="text-primary font-bold shrink-0">→</span> Entregar credenciales al paciente para la app móvil</li>
+        </ol>
+        <div class="mt-4 p-3 bg-primary/5 border border-primary/15 rounded-lg">
+          <p class="text-[0.78rem] text-primary font-medium">El paciente usa su DNI como usuario en la app Android.</p>
+        </div>
+      </div>
+
+      <div class="bg-surface border border-border rounded-xl p-6">
+        <div class="flex items-center gap-2.5 mb-4">
+          <span class="w-6 h-6 rounded-full bg-primary text-white text-[0.7rem] font-bold flex items-center justify-center shrink-0">2</span>
+          <h3 class="font-semibold text-[0.9rem] text-text">Completar la ficha médica</h3>
+        </div>
+        <ol class="text-[0.82rem] text-muted space-y-2 list-none pl-0">
+          <li class="flex gap-2"><span class="text-primary font-bold shrink-0">→</span> Abrir el perfil del paciente y hacer clic en <strong class="text-text">Ficha Médica</strong></li>
+          <li class="flex gap-2"><span class="text-primary font-bold shrink-0">→</span> Registrar peso, talla, tipo de sangre y antecedentes</li>
+          <li class="flex gap-2"><span class="text-primary font-bold shrink-0">→</span> Agregar prescripciones activas con dosis y frecuencia</li>
+          <li class="flex gap-2"><span class="text-primary font-bold shrink-0">→</span> Configurar umbrales personalizados si el caso lo requiere</li>
+        </ol>
+        <div class="mt-4 p-3 bg-ok/5 border border-ok/30 rounded-lg">
+          <p class="text-[0.78rem] text-ok font-medium">Los umbrales personalizados tienen prioridad sobre los valores estándar.</p>
+        </div>
+      </div>
+
+      <div class="bg-surface border border-border rounded-xl p-6">
+        <div class="flex items-center gap-2.5 mb-4">
+          <span class="w-6 h-6 rounded-full bg-primary text-white text-[0.7rem] font-bold flex items-center justify-center shrink-0">3</span>
+          <h3 class="font-semibold text-[0.9rem] text-text">Crear un plan de cuidados</h3>
+        </div>
+        <ol class="text-[0.82rem] text-muted space-y-2 list-none pl-0">
+          <li class="flex gap-2"><span class="text-primary font-bold shrink-0">→</span> En el perfil del paciente, sección <strong class="text-text">Plan de Cuidados</strong></li>
+          <li class="flex gap-2"><span class="text-primary font-bold shrink-0">→</span> Elegir tipo: <em>Medicación</em>, <em>Medición</em> o <em>Actividad</em></li>
+          <li class="flex gap-2"><span class="text-primary font-bold shrink-0">→</span> Definir hora y frecuencia (diario, semanal, etc.)</li>
+          <li class="flex gap-2"><span class="text-primary font-bold shrink-0">→</span> El plan aparece en la app del paciente como recordatorio</li>
+        </ol>
+      </div>
+
+      <div class="bg-surface border border-border rounded-xl p-6">
+        <div class="flex items-center gap-2.5 mb-4">
+          <span class="w-6 h-6 rounded-full bg-primary text-white text-[0.7rem] font-bold flex items-center justify-center shrink-0">4</span>
+          <h3 class="font-semibold text-[0.9rem] text-text">Agendar una consulta</h3>
+        </div>
+        <ol class="text-[0.82rem] text-muted space-y-2 list-none pl-0">
+          <li class="flex gap-2"><span class="text-primary font-bold shrink-0">→</span> Ir a <strong class="text-text">Agenda</strong> en el menú lateral</li>
+          <li class="flex gap-2"><span class="text-primary font-bold shrink-0">→</span> Usar el formulario para seleccionar paciente, fecha y tipo</li>
+          <li class="flex gap-2"><span class="text-primary font-bold shrink-0">→</span> La consulta pasa a estado <em>pendiente</em> hasta completarla</li>
+          <li class="flex gap-2"><span class="text-primary font-bold shrink-0">→</span> Al completarla, se puede agregar diagnóstico y observaciones</li>
+        </ol>
+      </div>
+
+    </div>
+  </section>
+
+  {# Guía métricas y alertas #}
+  <section id="guia-metricas" class="mb-9">
+    <div class="flex items-center gap-3 mb-5">
+      <div class="w-8 h-8 rounded-lg bg-ok/10 flex items-center justify-center shrink-0">
+        <svg class="w-4 h-4 text-ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+        </svg>
+      </div>
+      <h2 class="text-[1.15rem] font-bold text-text">Métricas y alertas</h2>
+    </div>
+
+    <div class="grid grid-cols-2 gap-4 mb-4">
+      <div class="bg-surface border border-border rounded-xl p-6">
+        <h3 class="font-semibold text-[0.9rem] text-text mb-3">Tipos de métricas</h3>
+        <div class="space-y-2.5">
+          <div class="flex items-center justify-between py-2 border-b border-border">
+            <span class="text-[0.82rem] font-medium text-text">Glucosa</span>
+            <span class="text-[0.78rem] text-muted bg-bg px-2.5 py-0.5 rounded-full border border-border">mg/dL</span>
+          </div>
+          <div class="flex items-center justify-between py-2 border-b border-border">
+            <span class="text-[0.82rem] font-medium text-text">Presión Arterial</span>
+            <span class="text-[0.78rem] text-muted bg-bg px-2.5 py-0.5 rounded-full border border-border">mmHg (sistólica / diastólica)</span>
+          </div>
+          <div class="flex items-center justify-between py-2 border-b border-border">
+            <span class="text-[0.82rem] font-medium text-text">Saturación O₂</span>
+            <span class="text-[0.78rem] text-muted bg-bg px-2.5 py-0.5 rounded-full border border-border">%</span>
+          </div>
+          <div class="flex items-center justify-between py-2">
+            <span class="text-[0.82rem] font-medium text-text">Frecuencia Cardíaca</span>
+            <span class="text-[0.78rem] text-muted bg-bg px-2.5 py-0.5 rounded-full border border-border">lpm</span>
+          </div>
+        </div>
+        <div class="mt-4 p-3 bg-bg border border-border rounded-lg">
+          <p class="text-[0.78rem] text-muted">El paciente registra métricas desde la app móvil. El sistema las evalúa automáticamente contra los umbrales configurados.</p>
+        </div>
+      </div>
+
+      <div class="bg-surface border border-border rounded-xl p-6">
+        <h3 class="font-semibold text-[0.9rem] text-text mb-3">Niveles de criticidad</h3>
+        <div class="flex flex-col gap-4">
+          <div class="flex items-start gap-3 p-3 bg-ok/5 border border-ok/20 rounded-lg">
+            <div class="w-2.5 h-2.5 rounded-full bg-ok mt-1 shrink-0"></div>
+            <div>
+              <p class="text-[0.82rem] font-semibold text-ok">Estable</p>
+              <p class="text-[0.78rem] text-muted mt-0.5">Sin alertas críticas en las últimas 24 h ni métricas fuera de rango recientes</p>
+            </div>
+          </div>
+          <div class="flex items-start gap-3 p-3 bg-warning/5 border border-warning/30 rounded-lg">
+            <div class="w-2.5 h-2.5 rounded-full bg-warning mt-1 shrink-0"></div>
+            <div>
+              <p class="text-[0.82rem] font-semibold text-warning">En observación</p>
+              <p class="text-[0.78rem] text-muted mt-0.5">2 o más métricas con alerta en las últimas 48 h (desviación 5–15% del umbral)</p>
+            </div>
+          </div>
+          <div class="flex items-start gap-3 p-3 bg-alert/5 border border-alert/20 rounded-lg">
+            <div class="w-2.5 h-2.5 rounded-full bg-alert mt-1 shrink-0"></div>
+            <div>
+              <p class="text-[0.82rem] font-semibold text-alert">Crítico</p>
+              <p class="text-[0.78rem] text-muted mt-0.5">Al menos una alerta crítica en las últimas 24 h (desviación &gt;15% del umbral)</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-surface border border-border rounded-xl p-6">
+      <h3 class="font-semibold text-[0.9rem] text-text mb-4">Gestionar alertas</h3>
+      <div class="flex gap-4">
+        <div class="flex items-start gap-3">
+          <div class="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+            <svg class="w-3.5 h-3.5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+          </div>
+          <div>
+            <p class="text-[0.82rem] font-semibold text-text mb-1">Ver alertas activas</p>
+            <p class="text-[0.78rem] text-muted">Ir a <strong>Alertas</strong> en el sidebar. El número en rojo indica alertas sin resolver.</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-3">
+          <div class="w-7 h-7 rounded-full bg-ok/10 flex items-center justify-center shrink-0 mt-0.5">
+            <svg class="w-3.5 h-3.5 text-ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+          </div>
+          <div>
+            <p class="text-[0.82rem] font-semibold text-text mb-1">Resolver una alerta</p>
+            <p class="text-[0.78rem] text-muted">Clic en <strong>Resolver</strong> dentro del detalle del paciente o desde la bandeja de alertas.</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-3">
+          <div class="w-7 h-7 rounded-full bg-warning/10 flex items-center justify-center shrink-0 mt-0.5">
+            <svg class="w-3.5 h-3.5 text-warning" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+          </div>
+          <div>
+            <p class="text-[0.82rem] font-semibold text-text mb-1">Revaluar umbrales</p>
+            <p class="text-[0.78rem] text-muted">Al guardar nuevos umbrales en la ficha, el sistema re-evalúa automáticamente todo el historial.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {# FAQ #}
+  <section id="faq">
+    <div class="flex items-center gap-3 mb-5">
+      <div class="w-8 h-8 rounded-lg bg-warning/10 flex items-center justify-center shrink-0">
+        <svg class="w-4 h-4 text-warning" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+      </div>
+      <h2 class="text-[1.15rem] font-bold text-text">Preguntas frecuentes</h2>
+    </div>
+
+    <div class="bg-surface border border-border rounded-xl overflow-hidden divide-y divide-border" id="faq-accordion">
+
+      {% for pregunta, respuesta in faqs %}
+      <div class="faq-item">
+        <button
+          type="button"
+          class="faq-trigger w-full flex items-center justify-between gap-4 px-6 py-4 text-left bg-transparent border-0 cursor-pointer group"
+          aria-expanded="false"
+        >
+          <span class="text-[0.875rem] font-semibold text-text group-hover:text-primary transition-colors">{{ pregunta }}</span>
+          <svg class="faq-icon shrink-0 w-4 h-4 text-muted transition-transform duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </button>
+        <div class="faq-body hidden px-6 pb-5">
+          <p class="text-[0.82rem] text-muted leading-relaxed">{{ respuesta }}</p>
+        </div>
+      </div>
+      {% endfor %}
+
+    </div>
+  </section>
+
+</div>
+
+<script>
+  document.querySelectorAll('.faq-trigger').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const item   = btn.closest('.faq-item');
+      const body   = item.querySelector('.faq-body');
+      const icon   = btn.querySelector('.faq-icon');
+      const isOpen = btn.getAttribute('aria-expanded') === 'true';
+
+      document.querySelectorAll('.faq-item').forEach(other => {
+        if (other !== item) {
+          other.querySelector('.faq-trigger').setAttribute('aria-expanded', 'false');
+          other.querySelector('.faq-body').classList.add('hidden');
+          other.querySelector('.faq-icon').style.transform = '';
+        }
+      });
+
+      btn.setAttribute('aria-expanded', String(!isOpen));
+      body.classList.toggle('hidden', isOpen);
+      icon.style.transform = isOpen ? '' : 'rotate(180deg)';
+    });
+  });
+</script>
+
+{% endblock %}

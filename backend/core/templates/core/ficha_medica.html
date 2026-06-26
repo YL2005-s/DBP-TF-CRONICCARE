@@ -28,11 +28,18 @@
         · DNI {{ paciente.dni }}
       </p>
     </div>
-    <a href="{% url 'detalle_paciente' paciente.id %}"
-       class="ml-auto flex items-center gap-2 bg-surface border border-border text-text2 px-4 py-2 rounded-lg font-semibold text-[0.82rem] font-sans no-underline transition-colors duration-200 hover:bg-bg hover:text-text">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 5 5 12 12 19"/></svg>
-      Volver a métricas
-    </a>
+    <div class="ml-auto flex items-center gap-2">
+      <a href="{% url 'exportar_ficha_pdf' paciente.id %}"
+         class="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg font-semibold text-[0.82rem] font-sans no-underline transition-colors duration-200 hover:bg-primary-dark">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Descargar HC
+      </a>
+      <a href="{% url 'detalle_paciente' paciente.id %}"
+         class="flex items-center gap-2 bg-surface border border-border text-text2 px-4 py-2 rounded-lg font-semibold text-[0.82rem] font-sans no-underline transition-colors duration-200 hover:bg-bg hover:text-text">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 5 5 12 12 19"/></svg>
+        Volver a métricas
+      </a>
+    </div>
   </div>
 
   <div class="flex gap-1 mb-6 border-b-2 border-border">
@@ -289,27 +296,65 @@
   <div id="tab-umbrales" class="tab-panel">
     <div class="bg-surface rounded-xl border border-border p-6 shadow-sm">
       <p class="text-[0.7rem] font-bold uppercase tracking-[0.06em] text-muted pb-2.5 border-b border-border mb-4.5">Rangos de alerta personalizados por paciente</p>
-      <p class="text-[0.8rem] text-muted mb-5 leading-relaxed">
-        Si no se definen umbrales para un tipo de métrica, se usan los valores estándar del sistema.
+      <p class="text-[0.8rem] text-muted mb-4 leading-relaxed">
+        Los valores personalizados reemplazan los predeterminados del sistema para este paciente.
         Deja en blanco los campos que no apliquen.
       </p>
+      <div class="flex items-start gap-2.5 bg-primary-light border border-primary/20 rounded-lg px-4 py-3 mb-5 text-[0.78rem] text-primary leading-relaxed">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span>
+          Para <strong>{{ paciente.get_enfermedad_display }}</strong> el sistema monitorea por defecto:
+          {% if paciente.enfermedad == 'diabetes_t1' or paciente.enfermedad == 'diabetes_t2' %}
+            Glucosa &lt; 126 mg/dL.
+          {% elif paciente.enfermedad == 'hipertension' %}
+            Presión sistólica &lt; 140 mmHg y diastólica &lt; 90 mmHg.
+          {% elif paciente.enfermedad == 'asma' %}
+            Saturación O2 &gt; 90%.
+          {% elif paciente.enfermedad == 'epoc' %}
+            Saturación O2 &gt; 88%.
+          {% elif paciente.enfermedad == 'irc' %}
+            Presión sistólica &lt; 130 mmHg y diastólica &lt; 85 mmHg.
+          {% elif paciente.enfermedad == 'icc' %}
+            Frecuencia cardíaca entre 50 y 100 lpm.
+          {% elif paciente.enfermedad == 'artritis' %}
+            Frecuencia cardíaca &lt; 100 lpm.
+          {% else %}
+            Sin umbrales predeterminados — define los rangos manualmente.
+          {% endif %}
+          Las demás métricas no tienen límite predeterminado para esta enfermedad; puedes definirlas abajo si este paciente las requiere.
+        </span>
+      </div>
       <form method="POST">
         {% csrf_token %}
         <input type="hidden" name="accion" value="guardar_umbrales">
-        <div class="grid gap-2.5 mb-2 pb-2 border-b border-border" style="grid-template-columns: 1fr 120px 120px">
+        <div class="grid gap-2.5 mb-2 pb-2 border-b border-border" style="grid-template-columns: 1fr 120px 120px 130px">
           <span class="text-[0.7rem] font-bold uppercase tracking-[0.04em] text-muted">Métrica</span>
-          <span class="text-[0.7rem] font-bold uppercase tracking-[0.04em] text-muted">Mín</span>
-          <span class="text-[0.7rem] font-bold uppercase tracking-[0.04em] text-muted">Máx</span>
+          <span class="text-[0.7rem] font-bold uppercase tracking-[0.04em] text-muted">Mín personaliz.</span>
+          <span class="text-[0.7rem] font-bold uppercase tracking-[0.04em] text-muted">Máx personaliz.</span>
+          <span class="text-[0.7rem] font-bold uppercase tracking-[0.04em] text-muted">Sistema (ref.)</span>
         </div>
         {% for tipo_val, tipo_label in tipos_metrica %}
-        <div class="grid gap-2.5 items-center mb-2.5" style="grid-template-columns: 1fr 120px 120px">
+        <div class="grid gap-2.5 items-center mb-2.5" style="grid-template-columns: 1fr 120px 120px 130px">
           <span class="text-[0.82rem] font-medium text-text2">{{ tipo_label }}</span>
           <input type="number" name="min_{{ tipo_val }}" step="0.1" class="w-full px-3.5 py-2.5 bg-surface border-[1.5px] border-border text-text rounded-lg font-sans text-[0.9rem] outline-none transition-[border-color,box-shadow] duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(30,64,175,0.1)] appearance-auto"
-            placeholder="—"
+            placeholder="Sin límite"
             value="{% for k, u in umbrales.items %}{% if k == tipo_val %}{{ u.valor_min|unlocalize|default:'' }}{% endif %}{% endfor %}">
           <input type="number" name="max_{{ tipo_val }}" step="0.1" class="w-full px-3.5 py-2.5 bg-surface border-[1.5px] border-border text-text rounded-lg font-sans text-[0.9rem] outline-none transition-[border-color,box-shadow] duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(30,64,175,0.1)] appearance-auto"
-            placeholder="—"
+            placeholder="Sin límite"
             value="{% for k, u in umbrales.items %}{% if k == tipo_val %}{{ u.valor_max|unlocalize|default:'' }}{% endif %}{% endfor %}">
+          <span class="text-[0.78rem] text-muted font-mono">
+            {% if tipo_val == 'glucosa' %}
+              {% if paciente.enfermedad == 'diabetes_t1' or paciente.enfermedad == 'diabetes_t2' %}máx. 126{% else %}—{% endif %}
+            {% elif tipo_val == 'presion_sistolica' %}
+              {% if paciente.enfermedad == 'hipertension' %}máx. 140{% elif paciente.enfermedad == 'irc' %}máx. 130{% else %}—{% endif %}
+            {% elif tipo_val == 'presion_diastolica' %}
+              {% if paciente.enfermedad == 'hipertension' %}máx. 90{% elif paciente.enfermedad == 'irc' %}máx. 85{% else %}—{% endif %}
+            {% elif tipo_val == 'saturacion' %}
+              {% if paciente.enfermedad == 'asma' %}mín. 90{% elif paciente.enfermedad == 'epoc' %}mín. 88{% else %}—{% endif %}
+            {% elif tipo_val == 'frecuencia' %}
+              {% if paciente.enfermedad == 'icc' %}50 – 100{% elif paciente.enfermedad == 'artritis' %}máx. 100{% else %}—{% endif %}
+            {% endif %}
+          </span>
         </div>
         {% endfor %}
         <button type="submit" class="mt-4 bg-primary text-white border-0 px-5 py-2.5 rounded-lg font-semibold text-sm font-sans cursor-pointer transition-colors duration-200 hover:bg-primary-dark">Guardar umbrales</button>

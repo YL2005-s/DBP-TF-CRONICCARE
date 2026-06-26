@@ -27,15 +27,13 @@ _TIPO_A_UMBRAL_CUSTOM = {
 
 
 def _umbral_custom(paciente, tipo_metrica_key):
-    """Devuelve (min, max) desde UmbralPersonalizado o (None, None)."""
-    u = paciente.umbrales.filter(tipo_metrica=tipo_metrica_key).first()
-    if u:
-        return u.valor_min, u.valor_max
+    umbral = paciente.umbrales.filter(tipo_metrica=tipo_metrica_key).first()
+    if umbral:
+        return umbral.valor_min, umbral.valor_max
     return None, None
 
 
 def _umbral_estatico(enfermedad, tipo):
-    """Devuelve (min, max) desde Metrica.UMBRALES o (None, None)."""
     h = Metrica.UMBRALES.get(enfermedad)
     if h and h['tipo'] == tipo:
         return h.get('min'), h.get('max')
@@ -43,7 +41,6 @@ def _umbral_estatico(enfermedad, tipo):
 
 
 def _umbral_estatico_diastolica(enfermedad):
-    """Devuelve (min, max) diastólica desde UMBRALES o (None, None)."""
     h = Metrica.UMBRALES.get(enfermedad)
     if h and h['tipo'] == 'presion':
         return h.get('min_diastolica'), h.get('max_diastolica')
@@ -51,7 +48,6 @@ def _umbral_estatico_diastolica(enfermedad):
 
 
 def _nivel_por_desviacion(pct):
-    """Traduce % de desviación del umbral a nivel de criticidad."""
     if pct > 15:
         return 'critica'
     if pct > 5:
@@ -60,7 +56,6 @@ def _nivel_por_desviacion(pct):
 
 
 def _criticidad_valor(valor, umbral_min, umbral_max):
-    """Compara un valor contra sus umbrales y devuelve la criticidad o None."""
     if umbral_max is not None and valor > umbral_max:
         pct = (valor - umbral_max) / umbral_max * 100
         return _nivel_por_desviacion(pct)

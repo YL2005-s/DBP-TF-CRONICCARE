@@ -54,9 +54,6 @@ def detalle_paciente(request, paciente_id):
     notas = paciente.notas.select_related("medico").all()
     planes = paciente.planes.filter(activo=True)
 
-    ultima_metrica = metricas.first()
-    ultima_metrica_str = formatear_valor_metrica(ultima_metrica)
-
     metricas_formateadas = [
         {
             "metrica": metrica,
@@ -85,7 +82,6 @@ def detalle_paciente(request, paciente_id):
         "estado_paciente": paciente.calcular_estado(),
         "metricas": metricas,
         "metricas_formateadas": metricas_formateadas,
-        "ultima_valor_str": ultima_metrica_str,
         "ultimas_por_tipo": ultimas_metricas_por_tipo(paciente),
         "notas": notas,
         "planes": planes,
@@ -178,7 +174,7 @@ def exportar_csv_metricas(request, paciente_id):
         ])
 
     registrar_log(
-        request, accion="generar_pdf", paciente=paciente,
+        request, accion="exportar_csv", paciente=paciente,
         descripcion=f"Exportó métricas CSV de {paciente.nombre}",
     )
     return response
@@ -322,13 +318,17 @@ def _manejar_post_ficha(request, paciente, ficha, paciente_id):
             max_val = request.POST.get(f"max_{tipo}")
             if min_val or max_val:
                 UmbralPersonalizado.objects.update_or_create(
-                    paciente=paciente,
-                    tipo_metrica=tipo,
+                    paciente = paciente,
+                    tipo_metrica = tipo,
                     defaults={
                         "valor_min": float(min_val) if min_val else None,
                         "valor_max": float(max_val) if max_val else None,
                     },
                 )
+            else:
+                UmbralPersonalizado.objects.filter(
+                    paciente = paciente, tipo_metrica = tipo
+                ).delete()
         resincronizar_alertas_paciente(paciente)
         registrar_log(request, accion="guardar_umbrales", paciente=paciente,
                       descripcion="Actualizó umbrales y re-evaluó el historial")

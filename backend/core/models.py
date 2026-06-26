@@ -291,6 +291,7 @@ class LogAcceso(models.Model):
         ('eliminar_plan', 'Eliminar plan de cuidados'),
         ('marcar_alerta', 'Marcar alerta como resuelta'),
         ('generar_pdf', 'Generar reporte PDF'),
+        ('exportar_csv', 'Exportar métricas CSV'),
         ('registrar_paciente', 'Registrar paciente'),
         ('completar_consulta', 'Completar consulta'),
         ('actualizar_ficha', 'Actualizar ficha médica'),

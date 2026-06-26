@@ -103,6 +103,12 @@ def login_token(request):
             status=403
         )
 
+    if user.groups.filter(name='Medico').exists() or user.is_superuser:
+        return Response(
+            {'error': 'Esta app es solo para pacientes. Los médicos deben usar el portal web.'},
+            status=403
+        )
+
     token, _ = Token.objects.get_or_create(user=user)
 
     paciente_data = None
@@ -166,8 +172,12 @@ def registrar_metrica_movil(request):
     valor_diastolica = request.data.get('valor_diastolica')
 
     if not tipo or valor is None:
+        return Response({'error': 'tipo y valor son requeridos.'}, status=400)
+
+    tipos_validos = {t for t, _ in Metrica.TIPOS}
+    if tipo not in tipos_validos:
         return Response(
-            {'error': 'tipo y valor son requeridos.'},
+            {'error': f"Tipo inválido. Opciones: {', '.join(sorted(tipos_validos))}."},
             status=400
         )
 
@@ -176,11 +186,16 @@ def registrar_metrica_movil(request):
     except (ValueError, TypeError):
         return Response({'error': 'El valor debe ser numérico.'}, status=400)
 
+    if valor <= 0:
+        return Response({'error': 'El valor debe ser mayor que cero.'}, status=400)
+
     if valor_diastolica is not None:
         try:
             valor_diastolica = float(valor_diastolica)
         except (ValueError, TypeError):
             return Response({'error': 'valor_diastolica debe ser numérico.'}, status=400)
+        if valor_diastolica <= 0:
+            return Response({'error': 'valor_diastolica debe ser mayor que cero.'}, status=400)
 
     criticidad = calcular_criticidad_metrica(paciente, tipo, valor, valor_diastolica)
 

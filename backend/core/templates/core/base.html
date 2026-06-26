@@ -107,6 +107,23 @@
           </a>
         </li>
         {% endif %}
+
+        <li>
+          <a
+            href="{% url 'ayuda' %}"
+            class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium no-underline transition-[background,color] duration-150 border-l-[3px] {% if request.resolver_match.url_name == 'ayuda' %}bg-white/15 text-white border-white font-semibold{% else %}text-white/65 border-transparent hover:bg-white/8 hover:text-white{% endif %}"
+          >
+            <svg
+              class="shrink-0 w-5 h-5 {% if request.resolver_match.url_name == 'ayuda' %}opacity-100{% else %}opacity-70{% endif %}"
+              viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            Ayuda
+          </a>
+        </li>
+
         {% if request.user.is_superuser %}
         <li>
           <a href="/admin/" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium no-underline text-warning/85 border-l-[3px] border-transparent hover:bg-warning/10 hover:text-warning transition-[background,color] duration-150">

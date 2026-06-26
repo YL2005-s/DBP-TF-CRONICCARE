@@ -45,16 +45,26 @@
         </div>
       </div>
       <div class="flex gap-2 shrink-0">
-        <a href="{% url 'exportar_pdf' paciente.id %}"
-           class="flex items-center gap-2 bg-surface border border-border text-text2 px-4 py-2 rounded-lg font-semibold text-[0.82rem] font-sans no-underline transition-colors duration-200 hover:bg-bg hover:text-text">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Reporte PDF
-        </a>
-        <a href="{% url 'exportar_csv' paciente.id %}"
-           class="flex items-center gap-2 bg-surface border border-border text-text2 px-4 py-2 rounded-lg font-semibold text-[0.82rem] font-sans no-underline transition-colors duration-200 hover:bg-bg hover:text-text">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
-          Exportar CSV
-        </a>
+        <div class="relative" id="export-menu-wrapper">
+          <button onclick="document.getElementById('export-dropdown').classList.toggle('hidden')"
+            class="flex items-center gap-2 bg-surface border border-border text-text2 px-4 py-2 rounded-lg font-semibold text-[0.82rem] font-sans cursor-pointer transition-colors duration-200 hover:bg-bg hover:text-text">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Exportar
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div id="export-dropdown" class="hidden absolute right-0 top-full mt-1.5 bg-surface border border-border rounded-xl shadow-lg z-20 overflow-hidden min-w-40">
+            <a href="{% url 'exportar_pdf' paciente.id %}"
+               class="flex items-center gap-2.5 px-4 py-2.5 text-[0.82rem] font-semibold text-text2 no-underline hover:bg-bg transition-colors duration-150">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Reporte PDF
+            </a>
+            <a href="{% url 'exportar_csv' paciente.id %}"
+               class="flex items-center gap-2.5 px-4 py-2.5 text-[0.82rem] font-semibold text-text2 no-underline hover:bg-bg transition-colors duration-150">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
+              Exportar CSV
+            </a>
+          </div>
+        </div>
         <a href="{% url 'ficha_medica' paciente.id %}"
            class="flex items-center gap-2 bg-surface border border-border text-text2 px-4 py-2 rounded-lg font-semibold text-[0.82rem] font-sans no-underline transition-colors duration-200 hover:bg-bg hover:text-text">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
@@ -392,7 +402,7 @@
   </div>
 </div>
 
-{{ grafica_etiquetas |json_script:"chart-labels" }}
+{{ grafica_etiquetas|json_script:"chart-labels" }}
 {{ grafica_valores|json_script:"chart-valores" }}
 {{ grafica_alertas|json_script:"chart-alertas" }}
 
@@ -495,6 +505,13 @@
 
   const savedTab = sessionStorage.getItem('tab_detalle');
   if (savedTab && ['evolucion', 'historial'].includes(savedTab)) switchMainTab(savedTab);
+
+  document.addEventListener('click', e => {
+    const wrapper = document.getElementById('export-menu-wrapper');
+    if (wrapper && !wrapper.contains(e.target)) {
+      document.getElementById('export-dropdown')?.classList.add('hidden');
+    }
+  });
 
   const planTipoSelect = document.getElementById('plan_tipo_select');
   const campoTipoMetrica = document.getElementById('campo_tipo_metrica');

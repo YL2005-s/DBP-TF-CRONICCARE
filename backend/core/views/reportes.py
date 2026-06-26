@@ -8,7 +8,7 @@ from django.template.loader import get_template
 from django.utils import timezone
 from xhtml2pdf import pisa
 
-from ..models import Metrica, Paciente
+from ..models import FichaMedica, Metrica, Paciente, PerfilMedico
 from ..permissions import medico_required
 from ..services import registrar_log, ultimas_metricas_por_tipo
 
@@ -71,6 +71,41 @@ def reporte_general_pdf(request):
         context,
         f"reporte_croniccare_general_{fecha_str}.pdf",
     )
+
+
+@login_required
+@medico_required
+def exportar_ficha_pdf(request, paciente_id):
+    paciente = get_object_or_404(Paciente, id=paciente_id)
+    ficha, _ = FichaMedica.objects.get_or_create(paciente=paciente)
+    umbrales = {u.tipo_metrica: u for u in paciente.umbrales.all()}
+
+    medico_perfil = None
+    try:
+        medico_perfil = request.user.perfil_medico
+    except PerfilMedico.DoesNotExist:
+        pass
+
+    registrar_log(
+        request,
+        accion="generar_pdf",
+        paciente=paciente,
+        descripcion=f"Ficha médica PDF generada para {paciente.nombre}",
+    )
+
+    context = {
+        "paciente": paciente,
+        "ficha": ficha,
+        "prescripciones_activas": paciente.prescripciones.filter(activa=True).select_related("medico"),
+        "umbrales": umbrales,
+        "medico": request.user,
+        "medico_perfil": medico_perfil,
+    }
+
+    nombre_slug = re.sub(r"[^a-z0-9]+", "_", paciente.nombre.lower().strip()).strip("_")
+    filename = f"ficha_medica_{nombre_slug}_{paciente.dni}.pdf"
+
+    return _render_pdf("core/reportes/ficha_medica_pdf.html", context, filename)
 
 
 def _render_pdf(template_path, context, filename):

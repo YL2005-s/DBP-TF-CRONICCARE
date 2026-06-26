@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @page { size: letter; margin: 0; }
+
+  body {
+    font-family: Helvetica, Arial, sans-serif;
+    color: #0f172a; font-size: 10px; line-height: 1.4;
+    margin: 0; padding: 0;
+  }
+
+  .section-title {
+    font-size: 9px; font-weight: bold; text-transform: uppercase;
+    color: #1e40af; border-bottom: 2px solid #1e40af;
+    padding-bottom: 4px; margin: 0 0 10px 0; letter-spacing: 0.04em;
+  }
+
+  .tbl { width: 100%; border-collapse: collapse; }
+  .tbl th {
+    background-color: #1e40af; color: #ffffff;
+    font-size: 8.5px; font-weight: bold; text-transform: uppercase;
+    padding: 6px 10px; text-align: left;
+  }
+  .tbl td {
+    font-size: 9px; padding: 6px 10px;
+    border-bottom: 1px solid #e2e8f0; color: #334155; vertical-align: middle;
+  }
+  .bg-alt { background-color: #f8fafc; }
+</style>
+</head>
+<body>
+
+<table style="width: 100%; background-color: #1e40af;" cellpadding="0" cellspacing="0">
+  <tr>
+    <td style="width: 55%; padding: 14px 28px; vertical-align: middle;">
+      <p style="font-size: 22px; font-weight: bold; color: #ffffff; margin: 0; padding: 0; line-height: 1.1;">CronicCare</p>
+      <p style="font-size: 8px; color: #93c5fd; text-transform: uppercase; margin: 3px 0 0 0; padding: 0; line-height: 1.1;">Sistema de Telemonitoreo de Pacientes Crónicos</p>
+    </td>
+    <td style="width: 45%; padding: 14px 28px; vertical-align: middle; text-align: right;">
+      <p style="font-size: 12px; font-weight: bold; color: #ffffff; margin: 0; padding: 0; line-height: 1.1;">Historia Clínica de Seguimiento</p>
+      <p style="font-size: 8px; color: #93c5fd; margin: 3px 0 0 0; padding: 0; line-height: 1.1;">Generada el {% now "d/m/Y" %} a las {% now "H:i" %}</p>
+    </td>
+  </tr>
+</table>
+<table style="width: 100%; background-color: #1d4ed8;" cellpadding="0" cellspacing="0">
+  <tr><td style="width: 100%; height: 4px; font-size: 1px; line-height: 1;">&nbsp;</td></tr>
+</table>
+
+<table style="width: 100%;" cellpadding="0" cellspacing="0">
+  <tr>
+    <td style="width: 5%;">&nbsp;</td>
+    <td style="width: 90%; padding-top: 18px;">
+      <table style="width: 100%; background-color: #f8fafc; border: 1px solid #e2e8f0; border-collapse: collapse;" cellpadding="0" cellspacing="0">
+        <tr>
+          <td rowspan="3" style="width: 4px; background-color: #1e40af; font-size: 1px; line-height: 1; padding: 0;">&nbsp;</td>
+          <td colspan="5" style="padding: 10px 14px 8px 14px; border-bottom: 1px solid #e2e8f0;">
+            <span style="font-size: 18px; font-weight: bold; color: #0f172a; vertical-align: middle;">{{ paciente.nombre }}</span>
+            &nbsp;&nbsp;
+            <span style="background-color: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; font-size: 8px; font-weight: bold; text-transform: uppercase; padding: 2px 7px;">{{ paciente.get_enfermedad_display }}</span>
+          </td>
+        </tr>
+        <tr>
+          <td style="width: 20%; padding: 7px 10px 7px 14px; vertical-align: top; border-right: 1px solid #e2e8f0;">
+            <p style="font-size: 7px; font-weight: bold; text-transform: uppercase; color: #64748b; margin: 0; padding: 0; line-height: 1;">DNI</p>
+            <p style="font-size: 13px; font-weight: bold; font-family: Courier, monospace; color: #0f172a; margin: 2px 0 0 0; padding: 0; line-height: 1.3;">{{ paciente.dni }}</p>
+          </td>
+          <td style="width: 15%; padding: 7px 10px; vertical-align: top; border-right: 1px solid #e2e8f0;">
+            <p style="font-size: 7px; font-weight: bold; text-transform: uppercase; color: #64748b; margin: 0; padding: 0; line-height: 1;">Edad</p>
+            <p style="font-size: 11px; font-weight: bold; color: #0f172a; margin: 2px 0 0 0; padding: 0; line-height: 1.3;">{% if paciente.edad %}{{ paciente.edad }} años{% else %}—{% endif %}</p>
+          </td>
+          <td style="width: 20%; padding: 7px 10px; vertical-align: top; border-right: 1px solid #e2e8f0;">
+            <p style="font-size: 7px; font-weight: bold; text-transform: uppercase; color: #64748b; margin: 0; padding: 0; line-height: 1;">Fecha de nacimiento</p>
+            <p style="font-size: 11px; font-weight: bold; color: #0f172a; margin: 2px 0 0 0; padding: 0; line-height: 1.3;">{% if paciente.fecha_nacimiento %}{{ paciente.fecha_nacimiento|date:"d/m/Y" }}{% else %}—{% endif %}</p>
+          </td>
+          <td style="width: 20%; padding: 7px 10px; vertical-align: top; border-right: 1px solid #e2e8f0;">
+            <p style="font-size: 7px; font-weight: bold; text-transform: uppercase; color: #64748b; margin: 0; padding: 0; line-height: 1;">Teléfono</p>
+            <p style="font-size: 11px; font-weight: bold; color: #0f172a; margin: 2px 0 0 0; padding: 0; line-height: 1.3;">{% if paciente.telefono %}{{ paciente.telefono }}{% else %}—{% endif %}</p>
+          </td>
+          <td style="width: 25%; padding: 7px 14px 7px 10px; vertical-align: top;">
+            <p style="font-size: 7px; font-weight: bold; text-transform: uppercase; color: #64748b; margin: 0; padding: 0; line-height: 1;">Ingreso al sistema</p>
+            <p style="font-size: 11px; font-weight: bold; color: #0f172a; margin: 2px 0 0 0; padding: 0; line-height: 1.3;">{{ paciente.fecha_registro|date:"d/m/Y" }}</p>
+          </td>
+        </tr>
+        <tr>
+          <td colspan="5" style="padding: 5px 14px 7px 14px;">
+            <span style="font-size: 7px; font-weight: bold; text-transform: uppercase; color: #64748b;">Médico tratante:</span>
+            <span style="font-size: 10px; color: #334155; margin-left: 6px;">{{ medico.get_full_name|default:medico.username }}{% if medico_perfil.cmp %} &nbsp;·&nbsp; CMP {{ medico_perfil.cmp }}{% endif %}{% if medico_perfil.especialidad %} &nbsp;·&nbsp; {{ medico_perfil.get_especialidad_display }}{% endif %}</span>
+          </td>
+        </tr>
+      </table>
+    </td>
+    <td style="width: 5%;">&nbsp;</td>
+  </tr>
+</table>
+
+<table style="width: 100%;" cellpadding="0" cellspacing="0">
+  <tr>
+    <td style="width: 5%;">&nbsp;</td>
+    <td style="width: 90%; padding-top: 14px;">
+      <p class="section-title">II. Datos Antropométricos</p>
+      <table style="width: 100%; background-color: #f8fafc; border: 1px solid #e2e8f0; border-collapse: collapse;" cellpadding="0" cellspacing="0">
+        <tr>
+          <td style="width: 25%; padding: 9px 12px; vertical-align: top; border-right: 1px solid #e2e8f0;">
+            <p style="font-size: 7px; font-weight: bold; text-transform: uppercase; color: #64748b; margin: 0; padding: 0; line-height: 1;">Grupo sanguíneo</p>
+            <p style="font-size: 16px; font-weight: bold; color: #0f172a; margin: 3px 0 0 0; padding: 0; line-height: 1.2;">{% if ficha.tipo_sangre %}{{ ficha.tipo_sangre }}{% else %}—{% endif %}</p>
+          </td>
+          <td style="width: 25%; padding: 9px 12px; vertical-align: top; border-right: 1px solid #e2e8f0;">
+            <p style="font-size: 7px; font-weight: bold; text-transform: uppercase; color: #64748b; margin: 0; padding: 0; line-height: 1;">Peso</p>
+            <p style="font-size: 16px; font-weight: bold; color: #0f172a; margin: 3px 0 0 0; padding: 0; line-height: 1.2;">{% if ficha.peso_kg %}{{ ficha.peso_kg }} <span style="font-size: 9px; font-weight: normal; color: #64748b;">kg</span>{% else %}—{% endif %}</p>
+          </td>
+          <td style="width: 25%; padding: 9px 12px; vertical-align: top; border-right: 1px solid #e2e8f0;">
+            <p style="font-size: 7px; font-weight: bold; text-transform: uppercase; color: #64748b; margin: 0; padding: 0; line-height: 1;">Talla</p>
+            <p style="font-size: 16px; font-weight: bold; color: #0f172a; margin: 3px 0 0 0; padding: 0; line-height: 1.2;">{% if ficha.talla_cm %}{{ ficha.talla_cm }} <span style="font-size: 9px; font-weight: normal; color: #64748b;">cm</span>{% else %}—{% endif %}</p>
+          </td>
+          <td style="width: 25%; padding: 9px 12px; vertical-align: top;">
+            <p style="font-size: 7px; font-weight: bold; text-transform: uppercase; color: #64748b; margin: 0; padding: 0; line-height: 1;">IMC</p>
+            {% if ficha.imc %}
+            <p style="font-size: 16px; font-weight: bold; color: #0f172a; margin: 3px 0 0 0; padding: 0; line-height: 1.2;">{{ ficha.imc }}</p>
+            <p style="font-size: 8px; font-weight: bold; margin: 2px 0 0 0; padding: 0; line-height: 1;
+              {% if ficha.imc < 18.5 %}color: #1e40af;{% elif ficha.imc < 25 %}color: #16a34a;{% elif ficha.imc < 30 %}color: #d97706;{% else %}color: #dc2626;{% endif %}">
+              {% if ficha.imc < 18.5 %}Bajo peso{% elif ficha.imc < 25 %}Normal{% elif ficha.imc < 30 %}Sobrepeso{% else %}Obesidad{% endif %}
+            </p>
+            {% else %}
+            <p style="font-size: 16px; font-weight: bold; color: #0f172a; margin: 3px 0 0 0; padding: 0; line-height: 1.2;">—</p>
+            {% endif %}
+          </td>
+        </tr>
+      </table>
+    </td>
+    <td style="width: 5%;">&nbsp;</td>
+  </tr>
+</table>
+
+<table style="width: 100%;" cellpadding="0" cellspacing="0">
+  <tr>
+    <td style="width: 5%;">&nbsp;</td>
+    <td style="width: 90%; padding-top: 14px;">
+      <p class="section-title">III. Historia de la Enfermedad Actual</p>
+      <table style="width: 100%; background-color: #f8fafc; border: 1px solid #e2e8f0; border-collapse: collapse;" cellpadding="0" cellspacing="0">
+        <tr>
+          <td style="width: 4px; background-color: #1e40af; font-size: 1px; line-height: 1; padding: 0;">&nbsp;</td>
+          <td style="padding: 10px 12px; font-size: 9.5px; color: #334155; line-height: 1.6;">
+            {% if ficha.historia_enfermedad %}{{ ficha.historia_enfermedad }}{% else %}<span style="color: #94a3b8;">Sin descripción registrada.</span>{% endif %}
+          </td>
+        </tr>
+      </table>
+    </td>
+    <td style="width: 5%;">&nbsp;</td>
+  </tr>
+</table>
+
+<table style="width: 100%;" cellpadding="0" cellspacing="0">
+  <tr>
+    <td style="width: 5%;">&nbsp;</td>
+    <td style="width: 90%; padding-top: 14px;">
+      <p class="section-title">IV. Antecedentes</p>
+      <table style="width: 100%; border-collapse: collapse;" cellpadding="0" cellspacing="0">
+        <tr valign="top">
+          <td style="width: 50%; padding-right: 5px;">
+            <table style="width: 100%; background-color: #f8fafc; border: 1px solid #e2e8f0; border-collapse: collapse; margin-bottom: 6px;" cellpadding="0" cellspacing="0">
+              <tr><td style="padding: 8px 10px;">
+                <p style="font-size: 7px; font-weight: bold; text-transform: uppercase; color: #64748b; margin: 0; padding: 0; line-height: 1;">Alergias conocidas</p>
+                <p style="font-size: 9.5px; color: #334155; margin: 4px 0 0 0; padding: 0; line-height: 1.5;">{% if ficha.alergias %}{{ ficha.alergias }}{% else %}<span style="color: #94a3b8;">Niega alergias conocidas.</span>{% endif %}</p>
+              </td></tr>
+            </table>
+            <table style="width: 100%; background-color: #f8fafc; border: 1px solid #e2e8f0; border-collapse: collapse;" cellpadding="0" cellspacing="0">
+              <tr><td style="padding: 8px 10px;">
+                <p style="font-size: 7px; font-weight: bold; text-transform: uppercase; color: #64748b; margin: 0; padding: 0; line-height: 1;">Antecedentes familiares</p>
+                <p style="font-size: 9.5px; color: #334155; margin: 4px 0 0 0; padding: 0; line-height: 1.5;">{% if ficha.antecedentes_familiares %}{{ ficha.antecedentes_familiares }}{% else %}<span style="color: #94a3b8;">Sin antecedentes familiares registrados.</span>{% endif %}</p>
+              </td></tr>
+            </table>
+          </td>
+          <td style="width: 50%; padding-left: 5px;">
+            <table style="width: 100%; background-color: #f8fafc; border: 1px solid #e2e8f0; border-collapse: collapse; margin-bottom: 6px;" cellpadding="0" cellspacing="0">
+              <tr><td style="padding: 8px 10px;">
+                <p style="font-size: 7px; font-weight: bold; text-transform: uppercase; color: #64748b; margin: 0; padding: 0; line-height: 1;">Cirugías previas</p>
+                <p style="font-size: 9.5px; color: #334155; margin: 4px 0 0 0; padding: 0; line-height: 1.5;">{% if ficha.cirugias_previas %}{{ ficha.cirugias_previas }}{% else %}<span style="color: #94a3b8;">Niega cirugías previas.</span>{% endif %}</p>
+              </td></tr>
+            </table>
+            <table style="width: 100%; background-color: #f8fafc; border: 1px solid #e2e8f0; border-collapse: collapse;" cellpadding="0" cellspacing="0">
+              <tr><td style="padding: 8px 10px;">
+                <p style="font-size: 7px; font-weight: bold; text-transform: uppercase; color: #64748b; margin: 0; padding: 0; line-height: 1;">Hospitalizaciones previas</p>
+                <p style="font-size: 9.5px; color: #334155; margin: 4px 0 0 0; padding: 0; line-height: 1.5;">{% if ficha.hospitalizaciones %}{{ ficha.hospitalizaciones }}{% else %}<span style="color: #94a3b8;">Sin hospitalizaciones previas.</span>{% endif %}</p>
+              </td></tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </td>
+    <td style="width: 5%;">&nbsp;</td>
+  </tr>
+</table>
+
+<table style="width: 100%;" cellpadding="0" cellspacing="0">
+  <tr>
+    <td style="width: 5%;">&nbsp;</td>
+    <td style="width: 90%; padding-top: 14px;">
+      <p class="section-title">V. Tratamiento Farmacológico Activo</p>
+      {% if prescripciones_activas %}
+      <table class="tbl" cellpadding="0" cellspacing="0">
+        <thead>
+          <tr>
+            <th style="width: 26%;">Medicamento</th>
+            <th style="width: 14%;">Dosis</th>
+            <th style="width: 14%;">Vía</th>
+            <th style="width: 18%;">Frecuencia</th>
+            <th style="width: 15%;">Desde</th>
+            <th style="width: 13%;">Hasta</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in prescripciones_activas %}
+          <tr {% if forloop.counter|divisibleby:2 %}class="bg-alt"{% endif %}>
+            <td style="font-weight: bold; color: #0f172a;">{{ p.medicamento }}</td>
+            <td style="font-family: Courier, monospace; font-weight: bold;">{{ p.dosis }}</td>
+            <td>{{ p.get_via_display }}</td>
+            <td>{{ p.get_frecuencia_display }}</td>
+            <td>{{ p.fecha_inicio|date:"d/m/Y" }}</td>
+            <td>{% if p.fecha_fin %}{{ p.fecha_fin|date:"d/m/Y" }}{% else %}<span style="color:#94a3b8">Indefinido</span>{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p style="color: #94a3b8; font-size: 9px; margin: 0; padding: 6px 0; line-height: 1.4;">Sin prescripciones activas registradas.</p>
+      {% endif %}
+    </td>
+    <td style="width: 5%;">&nbsp;</td>
+  </tr>
+</table>
+
+<table style="width: 100%;" cellpadding="0" cellspacing="0">
+  <tr>
+    <td style="width: 5%;">&nbsp;</td>
+    <td style="width: 90%; padding-top: 14px;">
+      <p class="section-title">VI. Contacto de Emergencia</p>
+      <table style="width: 100%; background-color: #f8fafc; border: 1px solid #e2e8f0; border-collapse: collapse;" cellpadding="0" cellspacing="0">
+        <tr>
+          <td style="width: 60%; padding: 9px 12px; border-right: 1px solid #e2e8f0; vertical-align: top;">
+            <p style="font-size: 7px; font-weight: bold; text-transform: uppercase; color: #64748b; margin: 0; padding: 0; line-height: 1;">Nombre</p>
+            <p style="font-size: 11px; font-weight: bold; color: #0f172a; margin: 2px 0 0 0; padding: 0; line-height: 1.3;">{% if ficha.contacto_emergencia_nombre %}{{ ficha.contacto_emergencia_nombre }}{% else %}<span style="color:#94a3b8">No registrado</span>{% endif %}</p>
+          </td>
+          <td style="width: 40%; padding: 9px 12px; vertical-align: top;">
+            <p style="font-size: 7px; font-weight: bold; text-transform: uppercase; color: #64748b; margin: 0; padding: 0; line-height: 1;">Teléfono</p>
+            <p style="font-size: 11px; font-weight: bold; font-family: Courier, monospace; color: #0f172a; margin: 2px 0 0 0; padding: 0; line-height: 1.3;">{% if ficha.contacto_emergencia_tel %}{{ ficha.contacto_emergencia_tel }}{% else %}<span style="color:#94a3b8">No registrado</span>{% endif %}</p>
+          </td>
+        </tr>
+      </table>
+    </td>
+    <td style="width: 5%;">&nbsp;</td>
+  </tr>
+</table>
+
+{% if umbrales %}
+<table style="width: 100%;" cellpadding="0" cellspacing="0">
+  <tr>
+    <td style="width: 5%;">&nbsp;</td>
+    <td style="width: 90%; padding-top: 14px;">
+      <p class="section-title">VII. Umbrales de Monitoreo Personalizados</p>
+      <table class="tbl" cellpadding="0" cellspacing="0">
+        <thead>
+          <tr>
+            <th style="width: 50%;">Métrica</th>
+            <th style="width: 25%;">Mínimo</th>
+            <th style="width: 25%;">Máximo</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for tipo, u in umbrales.items %}
+          <tr {% if forloop.counter|divisibleby:2 %}class="bg-alt"{% endif %}>
+            <td>{{ u.get_tipo_metrica_display }}</td>
+            <td style="font-family: Courier, monospace; font-weight: bold;">{% if u.valor_min %}{{ u.valor_min }}{% else %}<span style="color:#94a3b8">Sin límite</span>{% endif %}</td>
+            <td style="font-family: Courier, monospace; font-weight: bold;">{% if u.valor_max %}{{ u.valor_max }}{% else %}<span style="color:#94a3b8">Sin límite</span>{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </td>
+    <td style="width: 5%;">&nbsp;</td>
+  </tr>
+</table>
+{% endif %}
+
+<table style="width: 100%;" cellpadding="0" cellspacing="0">
+  <tr>
+    <td style="width: 5%;">&nbsp;</td>
+    <td style="width: 90%; padding-top: 36px; padding-bottom: 24px;">
+      <table style="width: 100%; border-top: 1px solid #e2e8f0;" cellpadding="0" cellspacing="0">
+        <tr valign="top">
+          <td style="width: 45%; padding-top: 10px;">
+            <table style="width: 180px; border-top: 1px solid #0f172a; margin-top: 32px;" cellpadding="0" cellspacing="0">
+              <tr><td style="padding-top: 5px;">
+                <p style="font-size: 9px; font-weight: bold; color: #0f172a; margin: 0; padding: 0; line-height: 1.3;">{{ medico.get_full_name|default:medico.username }}</p>
+                {% if medico_perfil.cmp %}<p style="font-size: 8px; color: #64748b; margin: 1px 0 0 0; padding: 0; line-height: 1.2;">CMP {{ medico_perfil.cmp }}</p>{% endif %}
+                {% if medico_perfil.especialidad %}<p style="font-size: 8px; color: #64748b; margin: 1px 0 0 0; padding: 0; line-height: 1.2;">{{ medico_perfil.get_especialidad_display }}</p>{% endif %}
+              </td></tr>
+            </table>
+          </td>
+          <td style="width: 55%; padding-top: 10px; text-align: right; vertical-align: bottom;">
+            <p style="font-size: 9px; font-weight: bold; color: #64748b; margin: 0; padding: 0; line-height: 1.3;">CronicCare</p>
+            <p style="font-size: 7px; color: #94a3b8; margin: 2px 0 0 0; padding: 0; line-height: 1.3;">Documento generado automáticamente. Uso exclusivo del equipo médico autorizado.</p>
+            <p style="font-size: 7px; color: #94a3b8; margin: 1px 0 0 0; padding: 0; line-height: 1.3;">Confidencial — sujeto a normativas de privacidad médica (MINSA Perú).</p>
+          </td>
+        </tr>
+      </table>
+    </td>
+    <td style="width: 5%;">&nbsp;</td>
+  </tr>
+</table>
+
+</body>
+</html>

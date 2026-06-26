@@ -24,6 +24,18 @@
       </select>
     </div>
 
+    <div class="flex flex-col gap-1 min-w-40">
+      <label class="text-[0.72rem] font-bold uppercase tracking-[0.04em] text-muted">Paciente</label>
+      <select name="paciente" class="bg-bg border border-border rounded-lg px-3 py-2 text-[0.82rem] text-text focus:outline-none focus:border-primary">
+        <option value="">Todos</option>
+        {% for p in pacientes %}
+        <option value="{{ p.id }}" {% if filtros.paciente == p.id|stringformat:"s" %}selected{% endif %}>
+          {{ p.nombre }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+
     <div class="flex flex-col gap-1 min-w-45">
       <label class="text-[0.72rem] font-bold uppercase tracking-[0.04em] text-muted">Acción</label>
       <select name="accion" class="bg-bg border border-border rounded-lg px-3 py-2 text-[0.82rem] text-text focus:outline-none focus:border-primary">
@@ -50,7 +62,7 @@
             class="bg-primary text-white px-5 py-2 rounded-lg font-semibold text-[0.82rem] hover:bg-primary/90 transition-colors">
       Filtrar
     </button>
-    {% if filtros.medico or filtros.accion or filtros.desde or filtros.hasta %}
+    {% if filtros.medico or filtros.paciente or filtros.accion or filtros.desde or filtros.hasta %}
     <a href="{% url 'auditoria' %}"
        class="px-4 py-2 rounded-lg border border-border text-[0.82rem] text-muted font-semibold hover:bg-bg transition-colors no-underline">
       Limpiar
@@ -122,7 +134,7 @@
     </p>
     <div class="flex gap-1.5">
       {% if logs.has_previous %}
-      <a href="?{% if filtros.medico %}medico={{ filtros.medico }}&{% endif %}{% if filtros.accion %}accion={{ filtros.accion }}&{% endif %}{% if filtros.desde %}desde={{ filtros.desde }}&{% endif %}{% if filtros.hasta %}hasta={{ filtros.hasta }}&{% endif %}page={{ logs.previous_page_number }}"
+      <a href="?{% if filtros.medico %}medico={{ filtros.medico }}&{% endif %}{% if filtros.paciente %}paciente={{ filtros.paciente }}&{% endif %}{% if filtros.accion %}accion={{ filtros.accion }}&{% endif %}{% if filtros.desde %}desde={{ filtros.desde }}&{% endif %}{% if filtros.hasta %}hasta={{ filtros.hasta }}&{% endif %}page={{ logs.previous_page_number }}"
          class="px-3 py-1.5 rounded-lg border border-border text-[0.82rem] text-muted font-semibold hover:bg-surface transition-colors no-underline">
         ← Anterior
       </a>
@@ -131,14 +143,14 @@
         {% if logs.number == num %}
         <span class="px-3 py-1.5 rounded-lg bg-primary text-white text-[0.82rem] font-semibold">{{ num }}</span>
         {% elif num >= logs.number|add:"-2" and num <= logs.number|add:"2" %}
-        <a href="?{% if filtros.medico %}medico={{ filtros.medico }}&{% endif %}{% if filtros.accion %}accion={{ filtros.accion }}&{% endif %}{% if filtros.desde %}desde={{ filtros.desde }}&{% endif %}{% if filtros.hasta %}hasta={{ filtros.hasta }}&{% endif %}page={{ num }}"
+        <a href="?{% if filtros.medico %}medico={{ filtros.medico }}&{% endif %}{% if filtros.paciente %}paciente={{ filtros.paciente }}&{% endif %}{% if filtros.accion %}accion={{ filtros.accion }}&{% endif %}{% if filtros.desde %}desde={{ filtros.desde }}&{% endif %}{% if filtros.hasta %}hasta={{ filtros.hasta }}&{% endif %}page={{ num }}"
            class="px-3 py-1.5 rounded-lg border border-border text-[0.82rem] text-muted font-semibold hover:bg-surface transition-colors no-underline">
           {{ num }}
         </a>
         {% endif %}
       {% endfor %}
       {% if logs.has_next %}
-      <a href="?{% if filtros.medico %}medico={{ filtros.medico }}&{% endif %}{% if filtros.accion %}accion={{ filtros.accion }}&{% endif %}{% if filtros.desde %}desde={{ filtros.desde }}&{% endif %}{% if filtros.hasta %}hasta={{ filtros.hasta }}&{% endif %}page={{ logs.next_page_number }}"
+      <a href="?{% if filtros.medico %}medico={{ filtros.medico }}&{% endif %}{% if filtros.paciente %}paciente={{ filtros.paciente }}&{% endif %}{% if filtros.accion %}accion={{ filtros.accion }}&{% endif %}{% if filtros.desde %}desde={{ filtros.desde }}&{% endif %}{% if filtros.hasta %}hasta={{ filtros.hasta }}&{% endif %}page={{ logs.next_page_number }}"
          class="px-3 py-1.5 rounded-lg border border-border text-[0.82rem] text-muted font-semibold hover:bg-surface transition-colors no-underline">
         Siguiente →
       </a>

@@ -53,7 +53,7 @@ def agenda(request):
         {
             "fecha": semana_inicio + timedelta(days=i),
             "nombre": _DIAS_ES[i],
-            "citas": [c for c in citas_cal if c.fecha_hora.date() == semana_inicio + timedelta(days=i)],
+            "citas": [c for c in citas_cal if timezone.localtime(c.fecha_hora).date() == semana_inicio + timedelta(days=i)],
             "es_hoy": semana_inicio + timedelta(days=i) == hoy,
             "pasado": semana_inicio + timedelta(days=i) < hoy,
         }
