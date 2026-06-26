@@ -15,6 +15,7 @@ import com.example.croniccare.data.network.ApiResult
 import com.example.croniccare.data.network.RetrofitClient
 import com.example.croniccare.data.network.safeApiCall
 import com.example.croniccare.databinding.ActivityDashboardBinding
+import com.example.croniccare.utils.AdherenciaPrefs
 import com.example.croniccare.utils.ScreenStateManager
 import com.example.croniccare.utils.SessionManager
 import com.example.croniccare.utils.applyStatusBarTopPadding
@@ -124,8 +125,15 @@ class DashboardFragment : Fragment() {
                         planManager?.showEmpty()
                         binding.tvResumenPlan.visibility = View.GONE
                     } else {
-                        binding.rvPlanHoy.layoutManager = LinearLayoutManager(requireContext())
-                        binding.rvPlanHoy.adapter = PlanAdapter(plan.take(3))
+                        val ctx = requireContext()
+                        val preview = plan.take(3)
+                        val completedIds = AdherenciaPrefs.loadCompleted(ctx, plan.map { it.id })
+                        binding.rvPlanHoy.layoutManager = LinearLayoutManager(ctx)
+                        binding.rvPlanHoy.adapter = PlanAdapter(
+                            items = preview,
+                            completedIds = completedIds,
+                            onToggle = { planId, done -> AdherenciaPrefs.save(ctx, planId, done) }
+                        )
                         planManager?.showContent()
                         binding.tvResumenPlan.text = "Hoy: ${plan.size} tareas"
                         binding.tvResumenPlan.visibility = View.VISIBLE

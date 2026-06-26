@@ -18,7 +18,6 @@
         android:padding="14dp"
         android:gravity="center_vertical">
 
-        <!-- Color stripe -->
         <View
             android:id="@+id/viewIndicador"
             android:layout_width="4dp"
@@ -26,7 +25,6 @@
             android:layout_marginEnd="14dp"
             android:background="#dc2626" />
 
-        <!-- Content -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"

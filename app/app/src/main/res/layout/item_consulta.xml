@@ -17,7 +17,6 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <!-- Header: tipo + estado -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -48,7 +47,6 @@
                 android:text="—" />
         </LinearLayout>
 
-        <!-- Fecha + médico -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -74,7 +72,6 @@
                 android:text="—" />
         </LinearLayout>
 
-        <!-- Diagnóstico (visible si hay texto) -->
         <TextView
             android:id="@+id/tvDiagnostico"
             android:layout_width="match_parent"
@@ -86,7 +83,6 @@
             android:visibility="gone"
             android:text="—" />
 
-        <!-- Próxima cita (visible si existe) -->
         <LinearLayout
             android:id="@+id/layoutProximaCita"
             android:layout_width="match_parent"

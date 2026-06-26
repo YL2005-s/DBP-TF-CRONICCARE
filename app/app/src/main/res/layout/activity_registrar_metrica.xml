@@ -127,7 +127,6 @@
                         android:imeOptions="actionDone" />
                 </com.google.android.material.textfield.TextInputLayout>
 
-                <!-- Reference card -->
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/cardReferencia"
                     android:layout_width="match_parent"

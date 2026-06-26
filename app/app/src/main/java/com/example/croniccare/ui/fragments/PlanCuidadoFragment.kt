@@ -1,6 +1,5 @@
 package com.example.croniccare.ui.fragments
 
-import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -13,17 +12,15 @@ import com.example.croniccare.data.network.ApiResult
 import com.example.croniccare.data.network.RetrofitClient
 import com.example.croniccare.data.network.safeApiCall
 import com.example.croniccare.databinding.ActivityPlanCuidadoBinding
+import com.example.croniccare.utils.AdherenciaPrefs
 import com.example.croniccare.utils.ScreenStateManager
 import com.example.croniccare.utils.applyStatusBarTopPadding
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.*
 
 class PlanCuidadoFragment : Fragment() {
 
     private var _binding: ActivityPlanCuidadoBinding? = null
     private val binding get() = _binding!!
-    private val hoy get() = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
     private var stateManager: ScreenStateManager? = null
 
     override fun onCreateView(
@@ -63,18 +60,18 @@ class PlanCuidadoFragment : Fragment() {
                     if (plan.isEmpty()) {
                         stateManager?.showEmpty()
                     } else {
-                        val completedIds = loadCompletedIds(plan.map { it.id })
+                        val ctx = requireContext()
+                        val completedIds = AdherenciaPrefs.loadCompleted(ctx, plan.map { it.id })
                         updateProgress(completedIds.size, plan.size)
                         binding.cardProgreso.visibility = View.VISIBLE
                         stateManager?.showContent()
-                        binding.rvPlan.layoutManager = LinearLayoutManager(requireContext())
+                        binding.rvPlan.layoutManager = LinearLayoutManager(ctx)
                         binding.rvPlan.adapter = PlanAdapter(
                             items = plan,
                             completedIds = completedIds,
                             onToggle = { planId, done ->
-                                saveCompletion(planId, done)
-                                val cnt = completedIds.size
-                                updateProgress(cnt, plan.size)
+                                AdherenciaPrefs.save(ctx, planId, done)
+                                updateProgress(completedIds.size, plan.size)
                             }
                         )
                     }
@@ -91,18 +88,4 @@ class PlanCuidadoFragment : Fragment() {
         binding.progressBarDia.progress = done
     }
 
-    private fun prefKey(planId: Int) = "cumplimiento_${planId}_$hoy"
-
-    private fun loadCompletedIds(allIds: List<Int>): MutableSet<Int> {
-        val prefs = requireContext().getSharedPreferences("plan_adherencia", Context.MODE_PRIVATE)
-        return allIds.filter { prefs.getBoolean(prefKey(it), false) }.toMutableSet()
-    }
-
-    private fun saveCompletion(planId: Int, done: Boolean) {
-        requireContext()
-            .getSharedPreferences("plan_adherencia", Context.MODE_PRIVATE)
-            .edit()
-            .putBoolean(prefKey(planId), done)
-            .apply()
-    }
 }
