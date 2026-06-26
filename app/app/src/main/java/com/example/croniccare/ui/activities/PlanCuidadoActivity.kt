@@ -1,31 +1,37 @@
-package com.example.croniccare
+package com.example.croniccare.ui.activities
 
 import android.os.Bundle
+import android.view.LayoutInflater
 import android.view.View
-import androidx.appcompat.app.AppCompatActivity
+import android.view.ViewGroup
+import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.croniccare.adapters.PlanAdapter
 import com.example.croniccare.data.network.RetrofitClient
 import com.example.croniccare.databinding.ActivityPlanCuidadoBinding
-import com.example.croniccare.utils.SessionManager
 import kotlinx.coroutines.launch
 
-class PlanCuidadoActivity : AppCompatActivity() {
+class PlanCuidadoFragment : Fragment() {
 
-    private lateinit var binding: ActivityPlanCuidadoBinding
-    private lateinit var session: SessionManager
+    private var _binding: ActivityPlanCuidadoBinding? = null
+    private val binding get() = _binding!!
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        binding = ActivityPlanCuidadoBinding.inflate(layoutInflater)
-        setContentView(binding.root)
+    override fun onCreateView(
+        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
+    ): View {
+        _binding = ActivityPlanCuidadoBinding.inflate(inflater, container, false)
+        return binding.root
+    }
 
-        session = SessionManager(this)
-
-        binding.btnBack.setOnClickListener { finish() }
-
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
         loadPlan()
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 
     private fun loadPlan() {
@@ -33,9 +39,9 @@ class PlanCuidadoActivity : AppCompatActivity() {
         binding.rvPlan.visibility = View.GONE
         binding.layoutEmpty.visibility = View.GONE
 
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             try {
-                val response = RetrofitClient.instance.getMiPlan(session.getAuthToken())
+                val response = RetrofitClient.instance.getMiPlan()
                 if (response.isSuccessful) {
                     val plan = response.body() ?: emptyList()
                     binding.progressPlan.visibility = View.GONE
@@ -44,7 +50,7 @@ class PlanCuidadoActivity : AppCompatActivity() {
                         binding.layoutEmpty.visibility = View.VISIBLE
                     } else {
                         binding.rvPlan.visibility = View.VISIBLE
-                        binding.rvPlan.layoutManager = LinearLayoutManager(this@PlanCuidadoActivity)
+                        binding.rvPlan.layoutManager = LinearLayoutManager(requireContext())
                         binding.rvPlan.adapter = PlanAdapter(plan)
                     }
                 } else {
@@ -57,6 +63,7 @@ class PlanCuidadoActivity : AppCompatActivity() {
     }
 
     private fun showEmpty() {
+        if (_binding == null) return
         binding.progressPlan.visibility = View.GONE
         binding.layoutEmpty.visibility = View.VISIBLE
     }

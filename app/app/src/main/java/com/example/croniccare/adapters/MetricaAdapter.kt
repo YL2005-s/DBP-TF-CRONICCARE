@@ -5,15 +5,17 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
+import com.example.croniccare.R
 import com.example.croniccare.data.models.Metrica
 import com.example.croniccare.databinding.ItemMetricaBinding
 import java.text.SimpleDateFormat
 import java.util.*
+import java.util.TimeZone
 
 class MetricaAdapter(private val items: List<Metrica>) :
     RecyclerView.Adapter<MetricaAdapter.ViewHolder>() {
 
-    inner class ViewHolder(val binding: ItemMetricaBinding) :
+    class ViewHolder(val binding: ItemMetricaBinding) :
         RecyclerView.ViewHolder(binding.root)
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -32,18 +34,17 @@ class MetricaAdapter(private val items: List<Metrica>) :
         b.tvFecha.text = formatFecha(metrica.fecha)
 
         if (metrica.alerta) {
-            b.viewIndicator.setBackgroundColor(Color.parseColor("#C62828"))
+            b.viewIndicator.setBackgroundColor(Color.parseColor("#dc2626"))
             b.tvAlerta.visibility = View.VISIBLE
-            b.tvAlerta.text = "ALERTA"
-            b.tvAlerta.setTextColor(Color.parseColor("#C62828"))
-            b.tvAlerta.setBackgroundColor(Color.parseColor("#FFEBEE"))
-            b.tvValor.setTextColor(Color.parseColor("#C62828"))
-            b.layoutIconBg.setBackgroundColor(Color.parseColor("#FFEBEE"))
+            b.tvAlerta.setBackgroundResource(R.drawable.bg_alert_badge)
+            b.tvAlerta.setTextColor(Color.parseColor("#dc2626"))
+            b.tvValor.setTextColor(Color.parseColor("#dc2626"))
+            b.layoutIconBg.setBackgroundColor(Color.parseColor("#fee2e2"))
         } else {
-            b.viewIndicator.setBackgroundColor(Color.parseColor("#1565C0"))
+            b.viewIndicator.setBackgroundColor(Color.parseColor("#1e40af"))
             b.tvAlerta.visibility = View.GONE
-            b.tvValor.setTextColor(Color.parseColor("#1A237E"))
-            b.layoutIconBg.setBackgroundColor(Color.parseColor("#E3F2FD"))
+            b.tvValor.setTextColor(Color.parseColor("#0f172a"))
+            b.layoutIconBg.setBackgroundColor(Color.parseColor("#eff6ff"))
         }
     }
 
@@ -80,19 +81,15 @@ class MetricaAdapter(private val items: List<Metrica>) :
 
     private fun formatFecha(fecha: String): String {
         return try {
-            val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSS", Locale.getDefault())
+            // Strip fractional seconds (Django returns microseconds, SimpleDateFormat can't handle them)
+            val normalizada = fecha.replace(Regex("\\.\\d+"), "")
+            val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
+            inputFormat.timeZone = TimeZone.getTimeZone("UTC")
             val outputFormat = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
-            val date = inputFormat.parse(fecha) ?: return fecha
+            val date = inputFormat.parse(normalizada) ?: return fecha
             outputFormat.format(date)
         } catch (e: Exception) {
-            try {
-                val inputFormat2 = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
-                val outputFormat = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
-                val date = inputFormat2.parse(fecha) ?: return fecha
-                outputFormat.format(date)
-            } catch (e2: Exception) {
-                fecha
-            }
+            fecha
         }
     }
 }

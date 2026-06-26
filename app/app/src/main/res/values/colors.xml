@@ -1,32 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="primary">#1565C0</color>
-    <color name="primary_dark">#0D47A1</color>
-    <color name="primary_light">#1E88E5</color>
-    <color name="primary_ultra_light">#E3F2FD</color>
+    <color name="primary">#1e40af</color>
+    <color name="primary_dark">#1d4ed8</color>
+    <color name="primary_light">#eff6ff</color>
+    <color name="primary_ultra_light">#eff6ff</color>
 
-    <color name="secondary">#00ACC1</color>
-    <color name="secondary_dark">#00838F</color>
+    <color name="background">#f8fafc</color>
+    <color name="surface">#ffffff</color>
+    <color name="surface_variant">#f1f5f9</color>
 
-    <color name="background">#F0F4F8</color>
-    <color name="surface">#FFFFFF</color>
-    <color name="surface_variant">#F5F7FA</color>
+    <color name="text_primary">#0f172a</color>
+    <color name="text_secondary">#334155</color>
+    <color name="text_hint">#64748b</color>
+    <color name="on_primary">#ffffff</color>
 
-    <color name="text_primary">#1A237E</color>
-    <color name="text_secondary">#546E7A</color>
-    <color name="text_hint">#90A4AE</color>
-    <color name="on_primary">#FFFFFF</color>
+    <color name="divider">#e2e8f0</color>
 
-    <color name="status_ok">#2E7D32</color>
-    <color name="status_ok_light">#E8F5E9</color>
-    <color name="status_warning">#F57F17</color>
-    <color name="status_warning_light">#FFFDE7</color>
-    <color name="status_critical">#C62828</color>
-    <color name="status_critical_light">#FFEBEE</color>
-    <color name="status_info">#1565C0</color>
-    <color name="status_info_light">#E3F2FD</color>
-
-    <color name="divider">#E0E0E0</color>
+    <color name="status_ok">#16a34a</color>
+    <color name="status_ok_light">#dcfce7</color>
+    <color name="status_warning">#d97706</color>
+    <color name="status_warning_light">#fef3c7</color>
+    <color name="status_critical">#dc2626</color>
+    <color name="status_critical_light">#fee2e2</color>
+    <color name="status_info">#1e40af</color>
+    <color name="status_info_light">#eff6ff</color>
 
     <color name="white">#FFFFFFFF</color>
     <color name="black">#FF000000</color>

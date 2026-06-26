@@ -30,21 +30,9 @@
             android:windowSoftInputMode="adjustResize" />
 
         <activity
-            android:name=".DashboardActivity"
-            android:exported="false" />
-
-        <activity
-            android:name=".RegistrarMetricaActivity"
+            android:name=".MainActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
-
-        <activity
-            android:name=".HistorialActivity"
-            android:exported="false" />
-
-        <activity
-            android:name=".PlanCuidadoActivity"
-            android:exported="false" />
 
     </application>
 

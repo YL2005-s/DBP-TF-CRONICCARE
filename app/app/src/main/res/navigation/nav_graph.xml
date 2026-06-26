@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/nav_dashboard">
+
+    <fragment
+        android:id="@+id/nav_dashboard"
+        android:name="com.example.croniccare.ui.activities.DashboardFragment"
+        android:label="Inicio" />
+
+    <fragment
+        android:id="@+id/nav_registrar"
+        android:name="com.example.croniccare.ui.activities.RegistrarMetricaFragment"
+        android:label="Registrar" />
+
+    <fragment
+        android:id="@+id/nav_historial"
+        android:name="com.example.croniccare.ui.activities.HistorialFragment"
+        android:label="Historial" />
+
+    <fragment
+        android:id="@+id/nav_plan"
+        android:name="com.example.croniccare.ui.activities.PlanCuidadoFragment"
+        android:label="Plan" />
+
+</navigation>

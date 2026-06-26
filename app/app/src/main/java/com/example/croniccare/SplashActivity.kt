@@ -1,5 +1,6 @@
 package com.example.croniccare
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
@@ -7,6 +8,7 @@ import android.os.Looper
 import androidx.appcompat.app.AppCompatActivity
 import com.example.croniccare.utils.SessionManager
 
+@SuppressLint("CustomSplashScreen")
 class SplashActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -15,8 +17,9 @@ class SplashActivity : AppCompatActivity() {
 
         Handler(Looper.getMainLooper()).postDelayed({
             val session = SessionManager(this)
+            session.initRetrofitToken()
             val intent = if (session.isLoggedIn()) {
-                Intent(this, DashboardActivity::class.java)
+                Intent(this, MainActivity::class.java)
             } else {
                 Intent(this, LoginActivity::class.java)
             }

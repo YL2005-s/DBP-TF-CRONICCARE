@@ -3,6 +3,7 @@ package com.example.croniccare.utils
 import android.content.Context
 import android.content.SharedPreferences
 import com.example.croniccare.data.models.LoginResponse
+import com.example.croniccare.data.network.RetrofitClient
 
 class SessionManager(context: Context) {
 
@@ -38,9 +39,15 @@ class SessionManager(context: Context) {
             }
             apply()
         }
+        RetrofitClient.authToken = "Token ${response.token}"
     }
 
-    fun getAuthToken(): String = "Token ${prefs.getString(KEY_TOKEN, "")}"
+    fun initRetrofitToken() {
+        val token = prefs.getString(KEY_TOKEN, null)
+        if (!token.isNullOrBlank()) {
+            RetrofitClient.authToken = "Token $token"
+        }
+    }
 
     fun getNombreCompleto(): String = prefs.getString(KEY_NOMBRE, "Paciente") ?: "Paciente"
 
@@ -48,7 +55,12 @@ class SessionManager(context: Context) {
 
     fun getEnfermedad(): String = prefs.getString(KEY_ENFERMEDAD, "") ?: ""
 
+    fun getPacienteId(): Int = prefs.getInt(KEY_PACIENTE_ID, -1)
+
     fun isLoggedIn(): Boolean = prefs.getString(KEY_TOKEN, null) != null
 
-    fun clearSession() = prefs.edit().clear().apply()
+    fun clearSession() {
+        prefs.edit().clear().apply()
+        RetrofitClient.authToken = ""
+    }
 }

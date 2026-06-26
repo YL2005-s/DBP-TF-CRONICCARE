@@ -56,7 +56,7 @@ class LoginActivity : AppCompatActivity() {
                     val loginData = response.body()!!
                     if (loginData.role == "paciente") {
                         session.saveSession(loginData)
-                        startActivity(Intent(this@LoginActivity, DashboardActivity::class.java))
+                        startActivity(Intent(this@LoginActivity, MainActivity::class.java))
                         finish()
                     } else {
                         binding.tilDni.error = "Esta app es para pacientes"

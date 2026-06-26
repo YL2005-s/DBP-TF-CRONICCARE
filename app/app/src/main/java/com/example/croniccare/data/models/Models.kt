@@ -22,7 +22,7 @@ data class PacienteInfo(
     val dni: String,
     val enfermedad: String,
     @SerializedName("enfermedad_display") val enfermedadDisplay: String,
-    @SerializedName("fecha_registro") val fechaRegistro: String
+    @SerializedName("fecha_registro") val fechaRegistro: String?
 )
 
 data class Metrica(
