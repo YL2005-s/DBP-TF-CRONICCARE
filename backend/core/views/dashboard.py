@@ -46,6 +46,7 @@ def dashboard_medico(request):
 
     return render(request, "core/dashboard.html", {
         **stats,
+        "total_alertas_pendientes": stats["alertas_count"],
         "pacientes_list": page_obj,
         "page_obj": page_obj,
         "q": q,

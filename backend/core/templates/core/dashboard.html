@@ -22,7 +22,7 @@
           </svg>
         </div>
       </div>
-      <div id="kpi-total" class="text-[1.8rem] font-black text-primary leading-none tracking-tight">{{ pacientes.count }}</div>
+      <div id="kpi-total" class="text-[1.8rem] font-black text-primary leading-none tracking-tight">{{ total_pacientes }}</div>
     </div>
 
     <div class="bg-surface rounded-xl border border-border border-l-4 border-l-ok shadow-sm p-6 flex flex-col gap-4 transition-all duration-200 hover:shadow-md">
@@ -30,7 +30,7 @@
         <div>
           <p class="text-[0.72rem] text-muted font-semibold uppercase tracking-[0.08em] mb-0.5">Estables</p>
           <p id="kpi-estables-pct" class="text-[0.82rem] text-muted">
-            {% if pacientes.count > 0 %}{% widthratio pacientes_seguros pacientes.count 100 %}% dentro del rango
+            {% if total_pacientes > 0 %}{% widthratio pacientes_seguros total_pacientes 100 %}% dentro del rango
             {% else %}Sin pacientes{% endif %}
           </p>
         </div>
@@ -74,7 +74,7 @@
     </div>
   </div>
 
-  {% if pacientes.count > 0 %}
+  {% if total_pacientes > 0 %}
   <div class="grid grid-cols-2 gap-5 mb-7">
     <div class="bg-surface rounded-xl border border-border shadow-sm p-5">
       <p class="text-[0.72rem] text-muted font-semibold uppercase tracking-[0.08em] mb-4">Estado de Pacientes</p>
@@ -344,10 +344,10 @@ if (canvasEnf && enfermedadesData.length) {
 }
 
 let estadoAnterior = {
-  total: Number("{{ pacientes.count|default:0 }}"),
+  total: Number("{{ total_pacientes|default:0 }}"),
   estables: Number("{{ pacientes_seguros|default:0 }}"),
   observacion: Number("{{ pacientes_riesgo|default:0 }}"),
-  criticas: Number("{{ alertas_count|default:0 }}"),
+  criticos: Number("{{ pacientes_criticos|default:0 }}"),
 };
 
 function set(id, valor) {

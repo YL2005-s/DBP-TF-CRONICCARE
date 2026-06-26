@@ -1,4 +1,5 @@
 {% extends 'core/base.html' %}
+{% load l10n %}
 
 {% block title %}Ficha Médica — {{ paciente.nombre }}{% endblock %}
 
@@ -82,12 +83,12 @@
           <div class="mb-0">
             <label class="block text-[0.8rem] font-semibold text-text2 mb-1.75">Peso (kg)</label>
             <input type="number" name="peso_kg" step="0.1" min="1" max="300" class="w-full px-3.5 py-2.5 bg-surface border-[1.5px] border-border text-text rounded-lg font-sans text-[0.9rem] outline-none transition-[border-color,box-shadow] duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(30,64,175,0.1)] appearance-auto"
-              placeholder="Ej. 72.5" value="{{ ficha.peso_kg|default:'' }}">
+              placeholder="Ej. 72.5" value="{{ ficha.peso_kg|unlocalize|default:'' }}">
           </div>
           <div class="mb-0">
             <label class="block text-[0.8rem] font-semibold text-text2 mb-1.75">Talla (cm)</label>
             <input type="number" name="talla_cm" step="0.1" min="50" max="250" class="w-full px-3.5 py-2.5 bg-surface border-[1.5px] border-border text-text rounded-lg font-sans text-[0.9rem] outline-none transition-[border-color,box-shadow] duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(30,64,175,0.1)] appearance-auto"
-              placeholder="Ej. 168" value="{{ ficha.talla_cm|default:'' }}">
+              placeholder="Ej. 168" value="{{ ficha.talla_cm|unlocalize|default:'' }}">
           </div>
         </div>
         {% if ficha.imc %}
@@ -133,8 +134,8 @@
       <input type="hidden" name="fecha_nacimiento" value="{{ paciente.fecha_nacimiento|date:'Y-m-d' }}">
       <input type="hidden" name="telefono" value="{{ paciente.telefono }}">
       <input type="hidden" name="tipo_sangre" value="{{ ficha.tipo_sangre }}">
-      <input type="hidden" name="peso_kg" value="{{ ficha.peso_kg|default:'' }}">
-      <input type="hidden" name="talla_cm" value="{{ ficha.talla_cm|default:'' }}">
+      <input type="hidden" name="peso_kg" value="{{ ficha.peso_kg|unlocalize|default:'' }}">
+      <input type="hidden" name="talla_cm" value="{{ ficha.talla_cm|unlocalize|default:'' }}">
       <input type="hidden" name="contacto_emergencia_nombre" value="{{ ficha.contacto_emergencia_nombre }}">
       <input type="hidden" name="contacto_emergencia_tel" value="{{ ficha.contacto_emergencia_tel }}">
 
@@ -305,10 +306,10 @@
           <span class="text-[0.82rem] font-medium text-text2">{{ tipo_label }}</span>
           <input type="number" name="min_{{ tipo_val }}" step="0.1" class="w-full px-3.5 py-2.5 bg-surface border-[1.5px] border-border text-text rounded-lg font-sans text-[0.9rem] outline-none transition-[border-color,box-shadow] duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(30,64,175,0.1)] appearance-auto"
             placeholder="—"
-            value="{% for k, u in umbrales.items %}{% if k == tipo_val %}{{ u.valor_min|default:'' }}{% endif %}{% endfor %}">
+            value="{% for k, u in umbrales.items %}{% if k == tipo_val %}{{ u.valor_min|unlocalize|default:'' }}{% endif %}{% endfor %}">
           <input type="number" name="max_{{ tipo_val }}" step="0.1" class="w-full px-3.5 py-2.5 bg-surface border-[1.5px] border-border text-text rounded-lg font-sans text-[0.9rem] outline-none transition-[border-color,box-shadow] duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(30,64,175,0.1)] appearance-auto"
             placeholder="—"
-            value="{% for k, u in umbrales.items %}{% if k == tipo_val %}{{ u.valor_max|default:'' }}{% endif %}{% endfor %}">
+            value="{% for k, u in umbrales.items %}{% if k == tipo_val %}{{ u.valor_max|unlocalize|default:'' }}{% endif %}{% endfor %}">
         </div>
         {% endfor %}
         <button type="submit" class="mt-4 bg-primary text-white border-0 px-5 py-2.5 rounded-lg font-semibold text-sm font-sans cursor-pointer transition-colors duration-200 hover:bg-primary-dark">Guardar umbrales</button>

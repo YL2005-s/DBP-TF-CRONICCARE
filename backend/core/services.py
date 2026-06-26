@@ -203,6 +203,7 @@ def estadisticas_dashboard(items):
     ])
 
     return {
+        "total_pacientes": len(items),
         "pacientes_seguros": estables,
         "pacientes_riesgo": riesgo,
         "pacientes_criticos": criticos,
