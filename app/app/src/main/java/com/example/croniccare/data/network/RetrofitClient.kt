@@ -1,5 +1,6 @@
 package com.example.croniccare.data.network
 
+import com.example.croniccare.BuildConfig
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -21,11 +22,16 @@ object RetrofitClient {
         } else {
             chain.request()
         }
-        chain.proceed(request)
+        val response = chain.proceed(request)
+        if (response.code == 401 && authToken.isNotBlank()) {
+            AuthEventBus.emitUnauthorized()
+        }
+        response
     }
 
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
-        level = HttpLoggingInterceptor.Level.BODY
+        level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY
+                else HttpLoggingInterceptor.Level.NONE
     }
 
     private val httpClient = OkHttpClient.Builder()

@@ -6,7 +6,6 @@
     android:orientation="vertical"
     android:background="@color/background">
 
-    <!-- Header -->
     <LinearLayout
         android:id="@+id/layoutHeader"
         android:layout_width="match_parent"
@@ -25,17 +24,16 @@
             android:textStyle="bold" />
     </LinearLayout>
 
-    <!-- Loading -->
-    <ProgressBar
-        android:id="@+id/progressHistorial"
-        android:layout_width="wrap_content"
+    <include
+        android:id="@+id/skeletonList"
+        layout="@layout/skeleton_lista"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:layout_marginTop="32dp"
-        android:indeterminateTint="@color/primary"
-        android:visibility="visible" />
+        android:layout_marginStart="12dp"
+        android:layout_marginEnd="12dp"
+        android:layout_marginTop="12dp"
+        android:visibility="gone" />
 
-    <!-- Empty state -->
     <LinearLayout
         android:id="@+id/layoutEmpty"
         android:layout_width="match_parent"
@@ -61,7 +59,6 @@
             android:gravity="center" />
     </LinearLayout>
 
-    <!-- List -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvHistorial"
         android:layout_width="match_parent"

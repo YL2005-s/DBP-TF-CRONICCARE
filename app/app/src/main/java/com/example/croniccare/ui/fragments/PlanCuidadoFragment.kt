@@ -9,7 +9,9 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.croniccare.ui.adapters.PlanAdapter
+import com.example.croniccare.data.network.ApiResult
 import com.example.croniccare.data.network.RetrofitClient
+import com.example.croniccare.data.network.safeApiCall
 import com.example.croniccare.databinding.ActivityPlanCuidadoBinding
 import com.example.croniccare.utils.ScreenStateManager
 import com.example.croniccare.utils.applyStatusBarTopPadding
@@ -36,16 +38,16 @@ class PlanCuidadoFragment : Fragment() {
         binding.layoutHeader.applyStatusBarTopPadding()
         stateManager = ScreenStateManager(
             skeleton = binding.skeletonList.root,
-            content  = binding.rvPlan,
-            empty    = binding.layoutEmpty
+            content = binding.rvPlan,
+            empty = binding.layoutEmpty
         )
         loadPlan()
     }
 
     override fun onDestroyView() {
-        super.onDestroyView()
         stateManager?.destroy()
         stateManager = null
+        super.onDestroyView()
         _binding = null
     }
 
@@ -54,11 +56,10 @@ class PlanCuidadoFragment : Fragment() {
         binding.cardProgreso.visibility = View.GONE
 
         viewLifecycleOwner.lifecycleScope.launch {
-            try {
-                val response = RetrofitClient.instance.getMiPlan()
-                if (response.isSuccessful) {
-                    val plan = response.body() ?: emptyList()
-
+            when (val result = safeApiCall { RetrofitClient.instance.getMiPlan() }) {
+                is ApiResult.Success -> {
+                    if (_binding == null) return@launch
+                    val plan = result.data
                     if (plan.isEmpty()) {
                         stateManager?.showEmpty()
                     } else {
@@ -72,17 +73,13 @@ class PlanCuidadoFragment : Fragment() {
                             completedIds = completedIds,
                             onToggle = { planId, done ->
                                 saveCompletion(planId, done)
-                                val current = binding.rvPlan.adapter as? PlanAdapter
-                                val cnt = current?.let { _ -> completedIds.size } ?: 0
+                                val cnt = completedIds.size
                                 updateProgress(cnt, plan.size)
                             }
                         )
                     }
-                } else {
-                    stateManager?.showEmpty()
                 }
-            } catch (_: Exception) {
-                stateManager?.showEmpty()
+                is ApiResult.Error -> stateManager?.showEmpty()
             }
         }
     }
@@ -108,5 +105,4 @@ class PlanCuidadoFragment : Fragment() {
             .putBoolean(prefKey(planId), done)
             .apply()
     }
-
 }

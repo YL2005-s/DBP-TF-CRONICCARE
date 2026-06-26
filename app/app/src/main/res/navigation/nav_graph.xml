@@ -7,22 +7,37 @@
 
     <fragment
         android:id="@+id/nav_dashboard"
-        android:name="com.example.croniccare.ui.activities.DashboardFragment"
+        android:name="com.example.croniccare.ui.fragments.DashboardFragment"
         android:label="Inicio" />
 
     <fragment
         android:id="@+id/nav_registrar"
-        android:name="com.example.croniccare.ui.activities.RegistrarMetricaFragment"
+        android:name="com.example.croniccare.ui.fragments.RegistrarMetricaFragment"
         android:label="Registrar" />
 
     <fragment
         android:id="@+id/nav_historial"
-        android:name="com.example.croniccare.ui.activities.HistorialFragment"
+        android:name="com.example.croniccare.ui.fragments.HistorialFragment"
         android:label="Historial" />
 
     <fragment
         android:id="@+id/nav_plan"
-        android:name="com.example.croniccare.ui.activities.PlanCuidadoFragment"
+        android:name="com.example.croniccare.ui.fragments.PlanCuidadoFragment"
         android:label="Plan" />
+
+    <fragment
+        android:id="@+id/nav_alertas"
+        android:name="com.example.croniccare.ui.fragments.AlertasFragment"
+        android:label="Alertas" />
+
+    <fragment
+        android:id="@+id/nav_prescripciones"
+        android:name="com.example.croniccare.ui.fragments.PrescripcionesFragment"
+        android:label="Medicamentos" />
+
+    <fragment
+        android:id="@+id/nav_consultas"
+        android:name="com.example.croniccare.ui.fragments.ConsultasFragment"
+        android:label="Consultas" />
 
 </navigation>

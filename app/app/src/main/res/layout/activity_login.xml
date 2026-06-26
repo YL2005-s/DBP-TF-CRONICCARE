@@ -13,7 +13,6 @@
         android:minHeight="600dp"
         android:paddingBottom="32dp">
 
-        <!-- Branding -->
         <ImageView
             android:id="@+id/ivLogo"
             android:layout_width="64dp"
@@ -51,7 +50,6 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent" />
 
-        <!-- Login card -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardLogin"
             android:layout_width="0dp"

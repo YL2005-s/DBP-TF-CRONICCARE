@@ -9,6 +9,7 @@ import com.example.croniccare.data.models.LoginRequest
 import com.example.croniccare.data.network.RetrofitClient
 import com.example.croniccare.databinding.ActivityLoginBinding
 import com.example.croniccare.utils.SessionManager
+import com.example.croniccare.utils.applySystemBarsPadding
 import kotlinx.coroutines.launch
 
 class LoginActivity : AppCompatActivity() {
@@ -20,6 +21,7 @@ class LoginActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityLoginBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        binding.root.applySystemBarsPadding()
 
         session = SessionManager(this)
 

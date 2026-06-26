@@ -11,7 +11,9 @@ import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.croniccare.ui.adapters.MetricaAdapter
 import com.example.croniccare.ui.adapters.PlanAdapter
+import com.example.croniccare.data.network.ApiResult
 import com.example.croniccare.data.network.RetrofitClient
+import com.example.croniccare.data.network.safeApiCall
 import com.example.croniccare.databinding.ActivityDashboardBinding
 import com.example.croniccare.utils.ScreenStateManager
 import com.example.croniccare.utils.SessionManager
@@ -45,13 +47,13 @@ class DashboardFragment : Fragment() {
 
         metricasManager = ScreenStateManager(
             skeleton = binding.skeletonMetricas.root,
-            content  = binding.rvMetricasRecientes,
-            empty    = binding.tvSinMetricas
+            content = binding.rvMetricasRecientes,
+            empty = binding.tvSinMetricas
         )
         planManager = ScreenStateManager(
             skeleton = binding.skeletonPlan.root,
-            content  = binding.rvPlanHoy,
-            empty    = binding.tvSinPlan
+            content = binding.rvPlanHoy,
+            empty = binding.tvSinPlan
         )
 
         loadData()
@@ -83,30 +85,12 @@ class DashboardFragment : Fragment() {
                 .setNegativeButton("Cancelar", null)
                 .show()
         }
-
-        binding.btnVerHistorial.setOnClickListener {
-            findNavController().navigate(R.id.nav_historial)
-        }
-
-        binding.bannerAlertasCriticas.setOnClickListener {
-            findNavController().navigate(R.id.nav_alertas)
-        }
-
-        binding.btnVerPlan.setOnClickListener {
-            findNavController().navigate(R.id.nav_plan)
-        }
-
-        binding.cardAccesoAlertas.setOnClickListener {
-            findNavController().navigate(R.id.nav_alertas)
-        }
-
-        binding.cardAccesoMedicamentos.setOnClickListener {
-            findNavController().navigate(R.id.nav_prescripciones)
-        }
-
-        binding.cardAccesoConsultas.setOnClickListener {
-            findNavController().navigate(R.id.nav_consultas)
-        }
+        binding.btnVerHistorial.setOnClickListener { findNavController().navigate(R.id.nav_historial) }
+        binding.bannerAlertasCriticas.setOnClickListener { findNavController().navigate(R.id.nav_alertas) }
+        binding.btnVerPlan.setOnClickListener { findNavController().navigate(R.id.nav_plan) }
+        binding.cardAccesoAlertas.setOnClickListener { findNavController().navigate(R.id.nav_alertas) }
+        binding.cardAccesoMedicamentos.setOnClickListener { findNavController().navigate(R.id.nav_prescripciones) }
+        binding.cardAccesoConsultas.setOnClickListener { findNavController().navigate(R.id.nav_consultas) }
     }
 
     private fun loadData() {
@@ -115,12 +99,10 @@ class DashboardFragment : Fragment() {
         binding.bannerAlertasCriticas.visibility = View.GONE
 
         viewLifecycleOwner.lifecycleScope.launch {
-            try {
-                val metricasResponse = RetrofitClient.instance.getMisMetricas()
-                if (metricasResponse.isSuccessful) {
-                    val metricas = metricasResponse.body() ?: emptyList()
-                    val recientes = metricas.take(3)
-
+            when (val result = safeApiCall { RetrofitClient.instance.getMisMetricas() }) {
+                is ApiResult.Success -> {
+                    if (_binding == null) return@launch
+                    val recientes = result.data.take(3)
                     if (recientes.isEmpty()) {
                         metricasManager?.showEmpty()
                     } else {
@@ -128,22 +110,16 @@ class DashboardFragment : Fragment() {
                         binding.rvMetricasRecientes.adapter = MetricaAdapter(recientes)
                         metricasManager?.showContent()
                     }
-
-                    val hasAlerta = metricas.any { it.alerta }
-                    updateEstado(hasAlerta)
-                    binding.bannerAlertasCriticas.visibility = if (hasAlerta) View.VISIBLE else View.GONE
                 }
-            } catch (_: Exception) {
-                if (_binding != null) metricasManager?.showEmpty()
+                is ApiResult.Error -> metricasManager?.showEmpty()
             }
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
-            try {
-                val planResponse = RetrofitClient.instance.getMiPlan()
-                if (planResponse.isSuccessful) {
-                    val plan = planResponse.body() ?: emptyList()
-
+            when (val result = safeApiCall { RetrofitClient.instance.getMiPlan() }) {
+                is ApiResult.Success -> {
+                    if (_binding == null) return@launch
+                    val plan = result.data
                     if (plan.isEmpty()) {
                         planManager?.showEmpty()
                         binding.tvResumenPlan.visibility = View.GONE
@@ -155,8 +131,19 @@ class DashboardFragment : Fragment() {
                         binding.tvResumenPlan.visibility = View.VISIBLE
                     }
                 }
-            } catch (_: Exception) {
-                if (_binding != null) planManager?.showEmpty()
+                is ApiResult.Error -> planManager?.showEmpty()
+            }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            when (val result = safeApiCall { RetrofitClient.instance.getMisAlertas() }) {
+                is ApiResult.Success -> {
+                    if (_binding == null) return@launch
+                    val tieneCriticas = result.data.any { it.criticidad == "critica" }
+                    updateEstado(tieneCriticas)
+                    binding.bannerAlertasCriticas.visibility = if (tieneCriticas) View.VISIBLE else View.GONE
+                }
+                is ApiResult.Error -> binding.bannerAlertasCriticas.visibility = View.GONE
             }
         }
     }

@@ -1,4 +1,4 @@
-package com.example.croniccare.adapters
+package com.example.croniccare.ui.adapters
 
 import android.graphics.Color
 import android.view.LayoutInflater
@@ -85,15 +85,11 @@ class MetricaAdapter(private val items: List<Metrica>) :
 
     private fun formatFecha(fecha: String): String {
         return try {
-            // Strip fractional seconds (Django returns microseconds, SimpleDateFormat can't handle them)
-            val normalizada = fecha.replace(Regex("\\.\\d+"), "")
-            val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
-            inputFormat.timeZone = TimeZone.getTimeZone("UTC")
-            val outputFormat = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
-            val date = inputFormat.parse(normalizada) ?: return fecha
-            outputFormat.format(date)
-        } catch (e: Exception) {
-            fecha
-        }
+            val clean = fecha.replace(Regex("\\.\\d+"), "")
+            val input = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", Locale.getDefault())
+            val output = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+            output.timeZone = TimeZone.getTimeZone("America/Lima")
+            output.format(input.parse(clean) ?: return fecha)
+        } catch (_: Exception) { fecha }
     }
 }

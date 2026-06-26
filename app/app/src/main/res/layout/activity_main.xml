@@ -4,7 +4,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    android:background="@color/background">
 
     <androidx.fragment.app.FragmentContainerView
         android:id="@+id/navHostFragment"
@@ -19,10 +20,14 @@
         android:id="@+id/bottomNav"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/surface"
-        app:elevation="4dp"
+        android:background="@drawable/bg_bottom_nav"
+        android:elevation="12dp"
         app:menu="@menu/bottom_nav_menu"
         app:itemIconTint="@color/bottom_nav_selector"
-        app:itemTextColor="@color/bottom_nav_selector" />
+        app:itemTextColor="@color/bottom_nav_selector"
+        app:itemBackground="@drawable/bg_bottom_nav_item"
+        app:itemPaddingTop="10dp"
+        app:itemPaddingBottom="10dp"
+        app:labelVisibilityMode="labeled" />
 
 </LinearLayout>

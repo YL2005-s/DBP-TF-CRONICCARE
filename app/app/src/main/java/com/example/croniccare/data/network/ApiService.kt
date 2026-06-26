@@ -19,4 +19,13 @@ interface ApiService {
 
     @GET("api/mi-plan/")
     suspend fun getMiPlan(): Response<List<PlanCuidado>>
+
+    @GET("api/mis-alertas/")
+    suspend fun getMisAlertas(@Query("resuelta") resuelta: Boolean = false): Response<List<Alerta>>
+
+    @GET("api/mis-prescripciones/")
+    suspend fun getMisPrescripciones(@Query("activa") activa: Boolean = true): Response<List<Prescripcion>>
+
+    @GET("api/mis-consultas/")
+    suspend fun getMisConsultas(): Response<List<Consulta>>
 }

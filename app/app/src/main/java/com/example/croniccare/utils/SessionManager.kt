@@ -26,19 +26,21 @@ class SessionManager(context: Context) {
             ?.takeIf { it.isNotBlank() }
             ?: response.nombreCompleto
 
-        prefs.edit().apply {
-            putString(KEY_TOKEN, response.token)
-            putInt(KEY_USER_ID, response.userId)
-            putString(KEY_USERNAME, response.username)
-            putString(KEY_NOMBRE, displayName)
-            putString(KEY_ROLE, response.role)
-            response.paciente?.let {
-                putInt(KEY_PACIENTE_ID, it.id)
-                putString(KEY_ENFERMEDAD, it.enfermedad)
-                putString(KEY_ENFERMEDAD_DISPLAY, it.enfermedadDisplay)
+        prefs.edit()
+            .putString(KEY_TOKEN, response.token)
+            .putInt(KEY_USER_ID, response.userId)
+            .putString(KEY_USERNAME, response.username)
+            .putString(KEY_NOMBRE, displayName)
+            .putString(KEY_ROLE, response.role)
+            .also { editor ->
+                response.paciente?.let {
+                    editor.putInt(KEY_PACIENTE_ID, it.id)
+                    editor.putString(KEY_ENFERMEDAD, it.enfermedad)
+                    editor.putString(KEY_ENFERMEDAD_DISPLAY, it.enfermedadDisplay)
+                }
             }
-            apply()
-        }
+            .apply()
+
         RetrofitClient.authToken = "Token ${response.token}"
     }
 

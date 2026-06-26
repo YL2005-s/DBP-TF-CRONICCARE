@@ -1,4 +1,4 @@
-package com.example.croniccare.adapters
+package com.example.croniccare.ui.adapters
 
 import android.graphics.Color
 import android.graphics.Paint
@@ -9,6 +9,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.croniccare.R
 import com.example.croniccare.data.models.PlanCuidado
 import com.example.croniccare.databinding.ItemPlanBinding
+import com.google.android.material.card.MaterialCardView
 
 class PlanAdapter(
     private val items: List<PlanCuidado>,
@@ -48,7 +49,7 @@ class PlanAdapter(
         b.tvDescripcion.setTextColor(if (done) "#94a3b8".toColorInt() else "#0f172a".toColorInt())
         b.tvFrecuencia.text = plan.frecuenciaDisplay
 
-        (holder.itemView as com.google.android.material.card.MaterialCardView)
+        (holder.itemView as MaterialCardView)
             .setCardBackgroundColor(if (done) "#f0fdf4".toColorInt() else "#ffffff".toColorInt())
 
         val px12 = (12 * holder.itemView.resources.displayMetrics.density).toInt()

@@ -15,6 +15,27 @@
         <item name="android:windowBackground">@drawable/splash_background</item>
     </style>
 
+    <style name="ShapeAppearance.BottomNavSheet" parent="">
+        <item name="cornerFamilyTopLeft">rounded</item>
+        <item name="cornerFamilyTopRight">rounded</item>
+        <item name="cornerSizeTopLeft">24dp</item>
+        <item name="cornerSizeTopRight">24dp</item>
+        <item name="cornerSizeBottomLeft">0dp</item>
+        <item name="cornerSizeBottomRight">0dp</item>
+    </style>
+
+    <style name="ShapeAppearance.BottomNavPill" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">50%</item>
+    </style>
+
+    <style name="BottomNavIndicatorStyle">
+        <item name="android:color">@color/primary_light</item>
+        <item name="shapeAppearance">@style/ShapeAppearance.BottomNavPill</item>
+        <item name="android:width">60dp</item>
+        <item name="android:height">34dp</item>
+    </style>
+
     <style name="CardStyle" parent="Widget.MaterialComponents.CardView">
         <item name="cardCornerRadius">12dp</item>
         <item name="cardElevation">0dp</item>
