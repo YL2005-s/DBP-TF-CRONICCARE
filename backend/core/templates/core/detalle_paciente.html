@@ -1,4 +1,5 @@
 {% extends 'core/base.html' %}
+{% load l10n %}
 
 {% block title %}{{ paciente.nombre }} — Detalle{% endblock %}
 
@@ -402,8 +403,8 @@
   const alertas = JSON.parse(document.getElementById('chart-alertas').textContent);
   const colores = alertas.map(a => a ? '#DC2626' : '#16A34A');
 
-  const umbralMin = {{ umbral_min|default:"null" }};
-  const umbralMax = {{ umbral_max|default:"null" }};
+  const umbralMin = {{ umbral_min|default:"null"|unlocalize }};
+  const umbralMax = {{ umbral_max|default:"null"|unlocalize }};
 
   const UNIDADES = { glucosa: 'mg/dL', presion: 'mmHg', saturacion: '%', frecuencia: 'lpm' };
   const tipoGrafica = '{{ tipo_grafica }}';

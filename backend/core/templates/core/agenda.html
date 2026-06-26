@@ -77,7 +77,7 @@
           <button onclick="switchTab('proximas')" id="tab-proximas"
             class="tab-btn px-4 py-2.5 text-[0.8rem] font-semibold rounded-t-lg border-b-2 transition-colors duration-150 cursor-pointer bg-transparent border-transparent text-muted hover:text-text">
             Próximas
-            {% if semana_citas %}<span class="ml-1.5 text-[0.62rem] font-black bg-primary text-white px-1.5 py-0.5 rounded-full">{{ semana_citas|length }}</span>{% endif %}
+            {% if proximas_page %}<span class="ml-1.5 text-[0.62rem] font-black bg-primary text-white px-1.5 py-0.5 rounded-full">{{ proximas_page|length }}</span>{% endif %}
           </button>
           <button onclick="switchTab('realizadas')" id="tab-realizadas"
             class="tab-btn px-4 py-2.5 text-[0.8rem] font-semibold rounded-t-lg border-b-2 transition-colors duration-150 cursor-pointer bg-transparent border-transparent text-muted hover:text-text">
@@ -129,8 +129,8 @@
         </div>
 
         <div id="panel-proximas" class="tab-panel">
-          {% if semana_citas %}
-          {% for c in semana_citas %}
+          {% if proximas_page %}
+          {% for c in proximas_page %}
           <div class="flex items-center gap-4 px-6 py-4 border-b border-border last:border-b-0 hover:bg-bg/50 transition-colors duration-150">
             <div class="text-center shrink-0 w-12">
               <div class="text-[0.88rem] font-black text-primary leading-none">{{ c.fecha_hora|date:"H:i" }}</div>
@@ -173,8 +173,8 @@
         </div>
 
         <div id="panel-realizadas" class="tab-panel">
-          {% if recientes %}
-          {% for c in recientes %}
+          {% if recientes_page %}
+          {% for c in recientes_page %}
           <div class="flex items-center gap-4 px-6 py-4 border-b border-border last:border-b-0 hover:bg-bg/50 transition-colors duration-150">
             <div class="text-center shrink-0 w-12">
               <div class="text-[0.88rem] font-black text-muted leading-none">{{ c.fecha_hora|date:"H:i" }}</div>

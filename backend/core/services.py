@@ -100,6 +100,50 @@ def calcular_criticidad_metrica(paciente, tipo, valor, valor_diastolica=None):
     return criticidad_principal
 
 
+def _valor_display_metrica(metrica):
+    if metrica.valor_diastolica is not None:
+        return f"{metrica.valor:.0f}/{metrica.valor_diastolica:.0f}"
+    return f"{metrica.valor}"
+
+
+def resincronizar_alertas_paciente(paciente):
+    metricas = paciente.metricas.prefetch_related("alertas")
+
+    with transaction.atomic():
+        for metrica in metricas:
+            criticidad = calcular_criticidad_metrica(
+                paciente, metrica.tipo, metrica.valor, metrica.valor_diastolica
+            )
+            nueva_alerta = criticidad is not None
+
+            if metrica.alerta != nueva_alerta:
+                metrica.alerta = nueva_alerta
+                metrica.save(update_fields=["alerta"])
+
+            alertas = list(metrica.alertas.all())
+            pendientes = [alerta for alerta in alertas if not alerta.resuelta]
+
+            if criticidad is None:
+                for alerta in pendientes:
+                    alerta.delete()
+                continue
+
+            mensaje = f"Valor {criticidad} de {metrica.tipo}: {_valor_display_metrica(metrica)}"
+            if pendientes:
+                alerta = pendientes[0]
+                alerta.criticidad = criticidad
+                alerta.mensaje = mensaje
+                alerta.save(update_fields=["criticidad", "mensaje"])
+            elif not alertas:
+                Alerta.objects.create(
+                    paciente = paciente,
+                    metrica = metrica,
+                    mensaje = mensaje,
+                    criticidad = criticidad,
+                    resuelta = False,
+                )
+
+
 def registrar_log(request, accion, paciente=None, descripcion=""):
     ip = request.META.get("HTTP_X_FORWARDED_FOR")
     if ip:
@@ -230,14 +274,14 @@ def formatear_valor_metrica(metrica):
 def ultimas_metricas_por_tipo(paciente):
     resultado = []
     for tipo, label, unidad in TIPOS_METRICA_DISPLAY:
-        m = paciente.metricas.filter(tipo=tipo).order_by("-fecha").first()
+        metrica = paciente.metricas.filter(tipo=tipo).order_by("-fecha").first()
         resultado.append({
             "tipo": tipo,
             "label": label,
             "unidad": unidad,
-            "valor_str": formatear_valor_metrica(m),
-            "alerta": m.alerta if m else False,
-            "fecha_str": m.fecha.strftime("%d/%m %H:%M") if m else None,
+            "valor_str": formatear_valor_metrica(metrica),
+            "alerta": metrica.alerta if metrica else False,
+            "fecha_str": metrica.fecha.strftime("%d/%m %H:%M") if metrica else None,
         })
     return resultado
 
@@ -247,22 +291,22 @@ def datos_grafico(paciente, tipo_grafica, periodo):
 
     if periodo == "semana":
         desde = ahora - timedelta(days=7)
-        qs = paciente.metricas.filter(tipo=tipo_grafica, fecha__gte=desde).order_by("fecha")
+        qs = paciente.metricas.filter(tipo = tipo_grafica, fecha__gte = desde).order_by("fecha")
         periodo_label = "Últimos 7 días"
     elif periodo == "mes":
         desde = ahora - timedelta(days=30)
-        qs = paciente.metricas.filter(tipo=tipo_grafica, fecha__gte=desde).order_by("fecha")
+        qs = paciente.metricas.filter(tipo = tipo_grafica, fecha__gte = desde).order_by("fecha")
         periodo_label = "Últimos 30 días"
     else:
-        qs = paciente.metricas.filter(tipo=tipo_grafica).order_by("-fecha")[:10]
+        qs = paciente.metricas.filter(tipo = tipo_grafica).order_by("-fecha")[:10]
         qs = list(reversed(list(qs)))
         periodo_label = "Últimas 10 mediciones"
 
     metricas = list(qs) if periodo in ("semana", "mes") else qs
 
-    labels  = [m.fecha.strftime("%d/%m %H:%M") for m in metricas]
-    valores = [float(m.valor) for m in metricas]
-    alertas = [m.alerta for m in metricas]
+    labels = [metrica.fecha.strftime("%d/%m %H:%M") for metrica in metricas]
+    valores = [float(metrica.valor) for metrica in metricas]
+    alertas = [metrica.alerta for metrica in metricas]
 
     tendencia = None
     if len(valores) >= 2 and valores[0] != 0:
@@ -280,7 +324,7 @@ def datos_grafico(paciente, tipo_grafica, periodo):
 
 
 def umbrales_grafico(paciente, tipo_grafica):
-    umbral_custom = paciente.umbrales.filter(tipo_metrica=tipo_grafica).first()
+    umbral_custom = paciente.umbrales.filter(tipo_metrica = tipo_grafica).first()
     if umbral_custom:
         return umbral_custom.valor_min, umbral_custom.valor_max
 
@@ -317,14 +361,14 @@ def obtener_timeline(paciente, metricas, notas):
         .select_related("metrica")
         .order_by("-fecha")[:30]
     )
-    for a in alertas_resueltas:
+    for alerta in alertas_resueltas:
         eventos.append({
             "tipo": "alerta",
-            "fecha": a.fecha,
-            "fecha_str": a.fecha.strftime("%d %b %Y · %H:%M"),
-            "alerta": a,
-            "valor_str": formatear_valor_metrica(a.metrica) if a.metrica else None,
-            "unidad": UNIDADES_METRICA.get(a.metrica.tipo, "") if a.metrica else "",
+            "fecha": alerta.fecha,
+            "fecha_str": alerta.fecha.strftime("%d %b %Y · %H:%M"),
+            "alerta": alerta,
+            "valor_str": formatear_valor_metrica(alerta.metrica) if alerta.metrica else None,
+            "unidad": UNIDADES_METRICA.get(alerta.metrica.tipo, "") if alerta.metrica else "",
         })
 
     eventos.sort(key=lambda x: x["fecha"], reverse=True)
@@ -354,17 +398,17 @@ def crear_paciente(nombre, dni, enfermedad, fecha_nac, telefono):
 
 def formatear_alertas(alertas_qs):
     resultado = []
-    for a in alertas_qs:
+    for alerta in alertas_qs:
         umbral_str = None
-        if a.metrica:
-            tipo   = a.metrica.tipo
-            val    = float(a.metrica.valor)
+        if alerta.metrica:
+            tipo = alerta.metrica.tipo
+            val = float(alerta.metrica.valor)
             unidad = UNIDADES_METRICA.get(tipo, "")
 
             custom_key = _TIPO_A_UMBRAL_CUSTOM.get(tipo)
-            vmin, vmax = _umbral_custom(a.paciente, custom_key) if custom_key else (None, None)
+            vmin, vmax = _umbral_custom(alerta.paciente, custom_key) if custom_key else (None, None)
             if vmin is None and vmax is None:
-                vmin, vmax = _umbral_estatico(a.paciente.enfermedad, tipo)
+                vmin, vmax = _umbral_estatico(alerta.paciente.enfermedad, tipo)
 
             if vmax is not None and val > vmax:
                 umbral_str = f"Umbral máx: {vmax} {unidad}"
@@ -372,9 +416,9 @@ def formatear_alertas(alertas_qs):
                 umbral_str = f"Umbral mín: {vmin} {unidad}"
 
         resultado.append({
-            "alerta": a,
-            "valor_str": formatear_valor_metrica(a.metrica) if a.metrica else None,
-            "fecha_str": a.fecha.strftime("%d/%m %H:%M"),
+            "alerta": alerta,
+            "valor_str": formatear_valor_metrica(alerta.metrica) if alerta.metrica else None,
+            "fecha_str": alerta.fecha.strftime("%d/%m %H:%M"),
             "umbral_str": umbral_str,
         })
     return resultado

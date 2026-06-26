@@ -22,7 +22,8 @@ from ..services import (
     tipo_metrica_principal,
     ultimas_metricas_por_tipo,
     formatear_valor_metrica,
-    obtener_timeline,   
+    obtener_timeline,
+    resincronizar_alertas_paciente,
 )
 
 
@@ -88,7 +89,7 @@ def detalle_paciente(request, paciente_id):
         "ultimas_por_tipo": ultimas_metricas_por_tipo(paciente),
         "notas": notas,
         "planes": planes,
-        "grafica_etiquetas ":  grafica["labels"],
+        "grafica_etiquetas": grafica["labels"],
         "grafica_valores": grafica["valores"],
         "grafica_alertas": grafica["alertas"],
         "periodo": periodo,
@@ -328,4 +329,7 @@ def _manejar_post_ficha(request, paciente, ficha, paciente_id):
                         "valor_max": float(max_val) if max_val else None,
                     },
                 )
-        messages.success(request, "Umbrales personalizados guardados.")
+        resincronizar_alertas_paciente(paciente)
+        registrar_log(request, accion="guardar_umbrales", paciente=paciente,
+                      descripcion="Actualizó umbrales y re-evaluó el historial")
+        messages.success(request, "Umbrales guardados. Se reevaluó el historial de métricas.")

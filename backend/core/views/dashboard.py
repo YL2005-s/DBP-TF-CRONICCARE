@@ -27,7 +27,7 @@ def dashboard_medico(request):
     filtrados = filtrar_pacientes(todos, q, filtro_enfermedad, filtro_estado)
 
     paginator = Paginator(filtrados, 10)
-    page_obect = paginator.get_page(request.GET.get("page", 1))
+    page_object = paginator.get_page(request.GET.get("page", 1))
 
     alertas_qs = (
         Alerta.objects
@@ -46,7 +46,7 @@ def dashboard_medico(request):
 
     return render(request, "core/dashboard.html", {
         **estadisticas,
-        "page_object": page_obect,
+        "page_object": page_object,
         "q": q,
         "filtro_enfermedad": filtro_enfermedad,
         "filtro_estado": filtro_estado,

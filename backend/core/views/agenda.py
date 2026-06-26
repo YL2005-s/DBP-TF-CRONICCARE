@@ -29,8 +29,8 @@ def agenda(request):
     )
     hoy_citas = proximas.filter(fecha_hora__date=hoy)
     proximas_qs = proximas.filter(fecha_hora__date__gt=hoy)
-    proximas_pag = Paginator(proximas_qs, 10)
-    proximas_page = proximas_pag.get_page(request.GET.get("pp", 1))
+    proximas_paginator = Paginator(proximas_qs, 10)
+    proximas_page = proximas_paginator.get_page(request.GET.get("pp", 1))
 
     recientes_qs = (
         Consulta.objects
@@ -38,8 +38,8 @@ def agenda(request):
         .select_related("paciente")
         .order_by("-fecha_hora")
     )
-    recientes_pag  = Paginator(recientes_qs, 10)
-    recientes_page = recientes_pag.get_page(request.GET.get("rp", 1))
+    recientes_paginator = Paginator(recientes_qs, 10)
+    recientes_page = recientes_paginator.get_page(request.GET.get("rp", 1))
 
     semana_inicio = hoy - timedelta(days=hoy.weekday())
     semana_fin = semana_inicio + timedelta(days=6)
@@ -63,9 +63,7 @@ def agenda(request):
     return render(request, "core/agenda.html", {
         "hoy": hoy,
         "hoy_citas": hoy_citas,
-        "semana_citas": proximas_page,
         "proximas_page": proximas_page,
-        "recientes": recientes_page,
         "recientes_page": recientes_page,
         "pacientes": Paciente.objects.all().order_by("nombre"),
         "tipos": Consulta.TIPOS,

@@ -15,9 +15,9 @@ def auditoria(request):
     qs = LogAcceso.objects.select_related("medico", "paciente").all()
 
     medico_id = request.GET.get("medico", "")
-    accion    = request.GET.get("accion", "")
-    desde     = request.GET.get("desde", "")
-    hasta     = request.GET.get("hasta", "")
+    accion = request.GET.get("accion", "")
+    desde = request.GET.get("desde", "")
+    hasta = request.GET.get("hasta", "")
 
     if medico_id:
         qs = qs.filter(medico_id=medico_id)
@@ -29,20 +29,20 @@ def auditoria(request):
         qs = qs.filter(fecha__date__lte=hasta)
 
     paginator = Paginator(qs, 50)
-    page      = request.GET.get("page", 1)
-    logs      = paginator.get_page(page)
+    page = request.GET.get("page", 1)
+    logs = paginator.get_page(page)
 
-    medicos = User.objects.filter(logs__isnull=False).distinct().order_by("first_name")
+    medicos = User.objects.filter(logs__isnull = False).distinct().order_by("first_name")
 
     return render(request, "core/auditoria.html", {
-        "logs":     logs,
-        "medicos":  medicos,
+        "logs": logs,
+        "medicos": medicos,
         "acciones": LogAcceso.ACCIONES,
         "filtros": {
             "medico": medico_id,
             "accion": accion,
-            "desde":  desde,
-            "hasta":  hasta,
+            "desde": desde,
+            "hasta": hasta,
         },
     })
 
