@@ -9,23 +9,21 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
 from ..models import (
-    Alerta, NotaClinica, Paciente, PlanCuidado,
+    NotaClinica, Paciente, PlanCuidado,
     Prescripcion, FichaMedica, UmbralPersonalizado,
 )
 from ..permissions import medico_required
 from ..services import (
     crear_paciente,
-    datos_grafica,
+    datos_grafico,
+    umbrales_grafico,
     registrar_log,
-    tipo_metrica_principal,
-    construir_timeline,
-    ultimas_metricas_por_tipo,
-    umbrales_para_grafica,
     TIPOS_METRICA_DISPLAY,
-    _valor_str,
+    tipo_metrica_principal,
+    ultimas_metricas_por_tipo,
+    formatear_valor_metrica,
+    obtener_timeline,   
 )
-
-_TIPOS_DISPLAY_GRAFICA = [(t, l) for t, l, _ in TIPOS_METRICA_DISPLAY]
 
 
 @login_required
@@ -39,32 +37,32 @@ def detalle_paciente(request, paciente_id):
 
     registrar_log(
         request,
-        accion="ver_paciente",
-        paciente=paciente,
-        descripcion=f"Accedió a la ficha de {paciente.nombre}",
+        accion = "ver_paciente",
+        paciente = paciente,
+        descripcion = f"Accedió a la ficha de {paciente.nombre}",
     )
     if request.GET.get("tipo") or request.GET.get("periodo"):
         registrar_log(
             request,
-            accion="ver_metricas",
-            paciente=paciente,
-            descripcion=f"Consultó gráfica de {request.GET.get('tipo', 'métricas')} ({request.GET.get('periodo', '10')})",
+            accion = "ver_metricas",
+            paciente = paciente,
+            descripcion = f"Consultó gráfica de {request.GET.get('tipo', 'métricas')} ({request.GET.get('periodo', '10')})",
         )
 
     metricas = paciente.metricas.all().order_by("-fecha")
     notas = paciente.notas.select_related("medico").all()
     planes = paciente.planes.filter(activo=True)
 
-    ultima_metrica   = metricas.first()
-    ultima_valor_str = _valor_str(ultima_metrica)
+    ultima_metrica = metricas.first()
+    ultima_metrica_str = formatear_valor_metrica(ultima_metrica)
 
     metricas_formateadas = [
         {
-            "metrica": m,
-            "valor_str": _valor_str(m),
-            "fecha_str": m.fecha.strftime("%d/%m/%y %H:%M"),
+            "metrica": metrica,
+            "valor_str": formatear_valor_metrica(metrica),
+            "fecha_str": metrica.fecha.strftime("%d/%m/%y %H:%M"),
         }
-        for m in metricas
+        for metrica in metricas
     ]
 
     periodo = request.GET.get("periodo", "10")
@@ -74,28 +72,28 @@ def detalle_paciente(request, paciente_id):
 
     tipos_disponibles = [
         {"tipo": t, "label": l, "count": paciente.metricas.filter(tipo=t).count()}
-        for t, l in _TIPOS_DISPLAY_GRAFICA
+        for t, l, _ in TIPOS_METRICA_DISPLAY
     ]
 
-    grafica = datos_grafica(paciente, tipo_grafica, periodo)
-    umbral_min, umbral_max = umbrales_para_grafica(paciente, tipo_grafica)
-    timeline = construir_timeline(paciente, metricas, notas)
+    grafica = datos_grafico(paciente, tipo_grafica, periodo)
+    umbral_min, umbral_max = umbrales_grafico(paciente, tipo_grafica)
+    timeline = obtener_timeline(paciente, metricas, notas)
 
     return render(request, "core/detalle_paciente.html", {
         "paciente": paciente,
         "estado_paciente": paciente.calcular_estado(),
         "metricas": metricas,
         "metricas_formateadas": metricas_formateadas,
-        "ultima_valor_str": ultima_valor_str,
+        "ultima_valor_str": ultima_metrica_str,
         "ultimas_por_tipo": ultimas_metricas_por_tipo(paciente),
         "notas": notas,
         "planes": planes,
-        "chart_labels":  grafica["labels"],
-        "chart_valores": grafica["valores"],
-        "chart_alertas": grafica["alertas"],
+        "grafica_etiquetas ":  grafica["labels"],
+        "grafica_valores": grafica["valores"],
+        "grafica_alertas": grafica["alertas"],
         "periodo": periodo,
         "periodo_label": grafica["periodo_label"],
-        "total_grafica": grafica["total"],
+        "total_mediciones": grafica["total"],
         "tipo_grafica": tipo_grafica,
         "tipos_disponibles": tipos_disponibles,
         "umbral_min": umbral_min,
@@ -165,17 +163,17 @@ def exportar_csv_metricas(request, paciente_id):
     response["Content-Disposition"] = (
         f'attachment; filename="metricas_{paciente.dni}.csv"'
     )
-    response.write("﻿")  # BOM para Excel
+    response.write("﻿")
 
     writer = csv.writer(response)
     writer.writerow(["Fecha", "Tipo", "Valor", "Valor Diastólica", "Alerta"])
-    for m in metricas:
+    for metrica in metricas:
         writer.writerow([
-            m.fecha.strftime("%d/%m/%Y %H:%M"),
-            m.get_tipo_display(),
-            m.valor,
-            m.valor_diastolica if m.valor_diastolica is not None else "",
-            "Sí" if m.alerta else "No",
+            metrica.fecha.strftime("%d/%m/%Y %H:%M"),
+            metrica.get_tipo_display(),
+            metrica.valor,
+            metrica.valor_diastolica if metrica.valor_diastolica is not None else "",
+            "Sí" if metrica.alerta else "No",
         ])
 
     registrar_log(
@@ -256,11 +254,11 @@ def ficha_medica(request, paciente_id):
         "ficha": ficha,
         "prescripciones_activas": prescripciones_activas,
         "prescripciones_pasadas": prescripciones_pasadas,
+        "frecuencias_prescripcion": Prescripcion.FRECUENCIAS,
         "umbrales": umbrales,
         "tipos_metrica": UmbralPersonalizado.TIPOS_METRICA,
-        "today": date.today().isoformat(),
+        "hoy": date.today().isoformat(),
         "vias": Prescripcion.VIAS,
-        "frecuencias_presc": Prescripcion.FRECUENCIAS,
     })
 
 
@@ -274,7 +272,7 @@ def _manejar_post_ficha(request, paciente, ficha, paciente_id):
         paciente.save()
 
         ficha.tipo_sangre = request.POST.get("tipo_sangre", "")
-        peso  = request.POST.get("peso_kg")
+        peso = request.POST.get("peso_kg")
         talla = request.POST.get("talla_cm")
         ficha.peso_kg = float(peso)  if peso  else None
         ficha.talla_cm = float(talla) if talla else None

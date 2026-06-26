@@ -207,14 +207,14 @@
           <div class="mb-0">
             <label class="block text-[0.8rem] font-semibold text-text2 mb-1.75">Frecuencia</label>
             <select name="frecuencia" class="w-full px-3.5 py-2.5 bg-surface border-[1.5px] border-border text-text rounded-lg font-sans text-[0.9rem] outline-none transition-[border-color,box-shadow] duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(30,64,175,0.1)] appearance-auto">
-              {% for val, label in frecuencias_presc %}
+              {% for val, label in frecuencias_prescripcion %}
                 <option value="{{ val }}">{{ label }}</option>
               {% endfor %}
             </select>
           </div>
           <div class="mb-0">
             <label class="block text-[0.8rem] font-semibold text-text2 mb-1.75">Fecha inicio *</label>
-            <input type="date" name="fecha_inicio" class="w-full px-3.5 py-2.5 bg-surface border-[1.5px] border-border text-text rounded-lg font-sans text-[0.9rem] outline-none transition-[border-color,box-shadow] duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(30,64,175,0.1)] appearance-auto" value="{{ today }}" required>
+            <input type="date" name="fecha_inicio" class="w-full px-3.5 py-2.5 bg-surface border-[1.5px] border-border text-text rounded-lg font-sans text-[0.9rem] outline-none transition-[border-color,box-shadow] duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(30,64,175,0.1)] appearance-auto" value="{{ hoy }}" required>
           </div>
         </div>
         <div class="grid grid-cols-2 gap-3.5 mb-4">

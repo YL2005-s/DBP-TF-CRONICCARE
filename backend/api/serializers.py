@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from core.models import Paciente, Metrica, Alerta, NotaClinica, PlanCuidado, PerfilMedico, Prescripcion
+from core.models import Paciente, Metrica, Alerta, NotaClinica, PlanCuidado, PerfilMedico, Prescripcion, Consulta
 
 
 class MetricaSerializer(serializers.ModelSerializer):
@@ -49,7 +49,7 @@ class PerfilMedicoSerializer(serializers.ModelSerializer):
 
 class PrescripcionSerializer(serializers.ModelSerializer):
     medico_nombre = serializers.CharField(source='medico.get_full_name', read_only=True)
-    via_display        = serializers.CharField(source='get_via_display',        read_only=True)
+    via_display = serializers.CharField(source='get_via_display', read_only=True)
     frecuencia_display = serializers.CharField(source='get_frecuencia_display', read_only=True)
 
     class Meta:
@@ -61,8 +61,22 @@ class PrescripcionSerializer(serializers.ModelSerializer):
         ]
 
 
+class ConsultaSerializer(serializers.ModelSerializer):
+    tipo_display = serializers.CharField(source='get_tipo_display', read_only=True)
+    estado_display = serializers.CharField(source='get_estado_display', read_only=True)
+    medico_nombre = serializers.CharField(source='medico.get_full_name', read_only=True)
+
+    class Meta:
+        model  = Consulta
+        fields = [
+            'id', 'tipo', 'tipo_display', 'estado', 'estado_display',
+            'fecha_hora', 'motivo', 'diagnostico', 'indicaciones',
+            'proxima_cita', 'medico_nombre',
+        ]
+
+
 class PlanCuidadoSerializer(serializers.ModelSerializer):
-    tipo_display         = serializers.CharField(
+    tipo_display = serializers.CharField(
         source='get_tipo_display', read_only=True)
     tipo_metrica_display = serializers.CharField(
         source='get_tipo_metrica_display', read_only=True)

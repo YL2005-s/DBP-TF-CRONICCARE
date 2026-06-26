@@ -69,7 +69,7 @@ def agenda(request):
         "recientes_page": recientes_page,
         "pacientes": Paciente.objects.all().order_by("nombre"),
         "tipos": Consulta.TIPOS,
-        "today": hoy.isoformat(),
+        "hoy": hoy.isoformat(),
         "dias_semana": dias_semana,
         "semana_inicio": semana_inicio,
         "semana_fin": semana_fin,

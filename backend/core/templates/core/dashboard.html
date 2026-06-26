@@ -30,7 +30,7 @@
         <div>
           <p class="text-[0.72rem] text-muted font-semibold uppercase tracking-[0.08em] mb-0.5">Estables</p>
           <p id="kpi-estables-pct" class="text-[0.82rem] text-muted">
-            {% if total_pacientes > 0 %}{% widthratio pacientes_seguros total_pacientes 100 %}% dentro del rango
+            {% if total_pacientes > 0 %}{% widthratio estables total_pacientes 100 %}% dentro del rango
             {% else %}Sin pacientes{% endif %}
           </p>
         </div>
@@ -40,7 +40,7 @@
           </svg>
         </div>
       </div>
-      <div id="kpi-estables" class="text-[1.8rem] font-black text-ok leading-none tracking-tight">{{ pacientes_seguros }}</div>
+      <div id="kpi-estables" class="text-[1.8rem] font-black text-ok leading-none tracking-tight">{{ estables }}</div>
     </div>
 
     <div class="bg-surface rounded-xl border border-border border-l-4 border-l-warning shadow-sm p-6 flex flex-col gap-4 transition-all duration-200 hover:shadow-md">
@@ -55,7 +55,7 @@
           </svg>
         </div>
       </div>
-      <div id="kpi-observacion" class="text-[1.8rem] font-black text-warning leading-none tracking-tight">{{ pacientes_riesgo }}</div>
+      <div id="kpi-observacion" class="text-[1.8rem] font-black text-warning leading-none tracking-tight">{{ riesgo }}</div>
     </div>
 
     <div class="bg-surface rounded-xl border border-border border-l-4 border-l-alert shadow-sm p-6 flex flex-col gap-4 transition-all duration-200 hover:shadow-md">
@@ -70,7 +70,7 @@
           </svg>
         </div>
       </div>
-      <div id="contador-critico" class="text-[1.8rem] font-black text-alert leading-none tracking-tight">{{ alertas_count }}</div>
+      <div id="contador-critico" class="text-[1.8rem] font-black text-alert leading-none tracking-tight">{{ alertas_criticas }}</div>
     </div>
   </div>
 
@@ -86,17 +86,17 @@
           <div class="flex items-center gap-2">
             <span class="w-2.5 h-2.5 rounded-full bg-ok shrink-0"></span>
             <span class="text-muted">Estable</span>
-            <span class="font-bold text-text ml-auto pl-4">{{ pacientes_seguros }}</span>
+            <span class="font-bold text-text ml-auto pl-4">{{ estables }}</span>
           </div>
           <div class="flex items-center gap-2">
             <span class="w-2.5 h-2.5 rounded-full bg-warning shrink-0"></span>
             <span class="text-muted">Observación</span>
-            <span class="font-bold text-text ml-auto pl-4">{{ pacientes_riesgo }}</span>
+            <span class="font-bold text-text ml-auto pl-4">{{ riesgo }}</span>
           </div>
           <div class="flex items-center gap-2">
             <span class="w-2.5 h-2.5 rounded-full bg-alert shrink-0"></span>
             <span class="text-muted">Crítico</span>
-            <span class="font-bold text-text ml-auto pl-4">{{ pacientes_criticos }}</span>
+            <span class="font-bold text-text ml-auto pl-4">{{ criticos }}</span>
           </div>
         </div>
       </div>
@@ -121,7 +121,7 @@
     <div class="flex-1 min-w-0">
       <div class="flex items-center justify-between mb-3">
         <div>
-          <span class="text-[0.85rem] font-bold text-alert">{{ total_alertas_pendientes }} alerta{% if total_alertas_pendientes != 1 %}s{% endif %} crítica{% if total_alertas_pendientes != 1 %}s{% endif %} sin resolver</span>
+          <span class="text-[0.85rem] font-bold text-alert">{{ alertas_criticas }} alerta{% if alertas_criticas != 1 %}s{% endif %} crítica{% if alertas_criticas != 1 %}s{% endif %} sin resolver</span>
           <span class="text-[0.78rem] text-alert/70 ml-2">Requieren atención inmediata</span>
         </div>
         <a href="{% url 'alertas' %}" class="text-[0.78rem] font-semibold text-alert no-underline border border-alert/40 px-3 py-1.5 rounded-lg hover:bg-alert hover:text-white transition-colors duration-150 shrink-0">
@@ -172,7 +172,7 @@
         <div>
           <h3 class="text-[0.95rem] font-bold text-text">Seguimiento Clínico</h3>
           <p class="text-[0.78rem] text-muted mt-0.5">
-            {% if hay_filtros %}{{ page_obj.paginator.count }} resultado{% if page_obj.paginator.count != 1 %}s{% endif %} · <a href="{% url 'dashboard' %}" class="text-primary no-underline hover:underline" data-ajax data-reset-form>Limpiar filtros</a>{% else %}Lista de pacientes activos{% endif %}
+            {% if hay_filtros %}{{ page_object.paginator.count }} resultado{% if page_object.paginator.count != 1 %}s{% endif %} · <a href="{% url 'dashboard' %}" class="text-primary no-underline hover:underline" data-ajax data-reset-form>Limpiar filtros</a>{% else %}Lista de pacientes activos{% endif %}
           </p>
         </div>
         <div class="flex items-center gap-2">
@@ -219,7 +219,7 @@
             <div></div>
           </div>
 
-          {% for item in pacientes_list %}
+          {% for item in page_object %}
           <div class="grid px-5 py-3.5 items-center border-b border-border transition-colors duration-150 hover:bg-bg last:border-b-0" style="grid-template-columns: 2fr 1.2fr 1fr 120px 110px">
             <div class="font-semibold">
               <a href="{% url 'detalle_paciente' item.paciente.id %}" class="text-text no-underline hover:text-primary transition-colors duration-150">
@@ -256,25 +256,25 @@
         </div>
       </div>
 
-      {% if page_obj.paginator.num_pages > 1 %}
+      {% if page_object.paginator.num_pages > 1 %}
       <div class="flex items-center justify-between px-5 py-3.5 border-t border-border">
         <span class="text-[0.78rem] text-muted">
-          Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
-          &nbsp;·&nbsp; {{ page_obj.paginator.count }} paciente{{ page_obj.paginator.count|pluralize:"s" }}
+          Página {{ page_object.number }} de {{ page_object.paginator.num_pages }}
+          &nbsp;·&nbsp; {{ page_object.paginator.count }} paciente{{ page_object.paginator.count|pluralize:"s" }}
         </span>
         <div class="flex gap-1">
-          {% if page_obj.has_previous %}
-          <a data-ajax href="{% if filtros_qs %}?{{ filtros_qs }}&page={{ page_obj.previous_page_number }}{% else %}?page={{ page_obj.previous_page_number }}{% endif %}" class="px-3 py-1.5 rounded-lg border border-border text-[0.78rem] font-semibold text-text2 no-underline hover:bg-bg transition-colors duration-150">← Anterior</a>
+          {% if page_object.has_previous %}
+          <a data-ajax href="{% if filtros_qs %}?{{ filtros_qs }}&page={{ page_object.previous_page_number }}{% else %}?page={{ page_object.previous_page_number }}{% endif %}" class="px-3 py-1.5 rounded-lg border border-border text-[0.78rem] font-semibold text-text2 no-underline hover:bg-bg transition-colors duration-150">← Anterior</a>
           {% endif %}
-          {% for num in page_obj.paginator.page_range %}
-          {% if num == page_obj.number %}
+          {% for num in page_object.paginator.page_range %}
+          {% if num == page_object.number %}
           <span class="px-3 py-1.5 rounded-lg bg-primary text-white text-[0.78rem] font-bold">{{ num }}</span>
-          {% elif num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
+          {% elif num >= page_object.number|add:"-2" and num <= page_object.number|add:"2" %}
           <a data-ajax href="{% if filtros_qs %}?{{ filtros_qs }}&page={{ num }}{% else %}?page={{ num }}{% endif %}" class="px-3 py-1.5 rounded-lg border border-border text-[0.78rem] font-semibold text-text2 no-underline hover:bg-bg transition-colors duration-150">{{ num }}</a>
           {% endif %}
           {% endfor %}
-          {% if page_obj.has_next %}
-          <a data-ajax href="{% if filtros_qs %}?{{ filtros_qs }}&page={{ page_obj.next_page_number }}{% else %}?page={{ page_obj.next_page_number }}{% endif %}" class="px-3 py-1.5 rounded-lg border border-border text-[0.78rem] font-semibold text-text2 no-underline hover:bg-bg transition-colors duration-150">Siguiente →</a>
+          {% if page_object.has_next %}
+          <a data-ajax href="{% if filtros_qs %}?{{ filtros_qs }}&page={{ page_object.next_page_number }}{% else %}?page={{ page_object.next_page_number }}{% endif %}" class="px-3 py-1.5 rounded-lg border border-border text-[0.78rem] font-semibold text-text2 no-underline hover:bg-bg transition-colors duration-150">Siguiente →</a>
           {% endif %}
         </div>
       </div>
@@ -297,7 +297,7 @@ if (canvasEstado) {
     data: {
       labels: ['Estable', 'Observación', 'Crítico'],
       datasets: [{
-        data: [{{ pacientes_seguros }}, {{ pacientes_riesgo }}, {{ pacientes_criticos }}],
+        data: [{{ estables }}, {{ riesgo }}, {{ criticos }}],
         backgroundColor: ['#16a34a', '#d97706', '#dc2626'],
         borderWidth: 0,
         hoverOffset: 4,
@@ -314,7 +314,7 @@ if (canvasEstado) {
   });
 }
 
-const enfermedadesData = {{ enfermedades_chart_json|safe }};
+const enfermedadesData = {{ enfermedades_chart|safe }};
 const canvasEnf = document.getElementById('chart-enfermedades');
 if (canvasEnf && enfermedadesData.length) {
   chartEnf = new Chart(canvasEnf, {
@@ -345,9 +345,9 @@ if (canvasEnf && enfermedadesData.length) {
 
 let estadoAnterior = {
   total: Number("{{ total_pacientes|default:0 }}"),
-  estables: Number("{{ pacientes_seguros|default:0 }}"),
-  observacion: Number("{{ pacientes_riesgo|default:0 }}"),
-  criticos: Number("{{ pacientes_criticos|default:0 }}"),
+  estables: Number("{{ estables|default:0 }}"),
+  observacion: Number("{{ riesgo|default:0 }}"),
+  criticos: Number("{{ criticos|default:0 }}"),
 };
 
 function set(id, valor) {

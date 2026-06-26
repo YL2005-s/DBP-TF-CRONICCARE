@@ -4,9 +4,9 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny, BasePermission
 from rest_framework.response import Response
 from django.contrib.auth import authenticate
-from core.models import Paciente, Metrica, Alerta, NotaClinica, PlanCuidado, Prescripcion
+from core.models import Paciente, Metrica, Alerta, NotaClinica, PlanCuidado, Prescripcion, Consulta
 from core.services import calcular_criticidad_metrica
-from .serializers import PacienteSerializer, MetricaSerializer, AlertaSerializer, NotaClinicaSerializer, PlanCuidadoSerializer, PrescripcionSerializer
+from .serializers import PacienteSerializer, MetricaSerializer, AlertaSerializer, NotaClinicaSerializer, PlanCuidadoSerializer, PrescripcionSerializer, ConsultaSerializer
 
 
 class EsMedico(BasePermission):
@@ -253,6 +253,24 @@ def mis_prescripciones(request):
         .order_by('-fecha_inicio')
     )
     serializer = PrescripcionSerializer(prescripciones, many=True)
+    return Response(serializer.data)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def mis_consultas(request):
+    try:
+        paciente = request.user.paciente
+    except Exception:
+        return Response({'error': 'No tienes un perfil de paciente.'}, status=403)
+
+    consultas = (
+        Consulta.objects
+        .filter(paciente=paciente)
+        .select_related('medico')
+        .order_by('-fecha_hora')
+    )
+    serializer = ConsultaSerializer(consultas, many=True)
     return Response(serializer.data)
 
 

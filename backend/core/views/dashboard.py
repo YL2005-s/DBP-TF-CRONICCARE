@@ -8,10 +8,10 @@ from django.shortcuts import render
 from ..models import Alerta, Paciente
 from ..permissions import medico_required
 from ..services import (
-    _valor_str,
-    construir_lista_pacientes,
-    estadisticas_dashboard,
-    filtrar_items_dashboard,
+    formatear_valor_metrica,
+    listar_pacientes,
+    estadisticas_pacientes,
+    filtrar_pacientes,
 )
 
 
@@ -22,12 +22,12 @@ def dashboard_medico(request):
     filtro_enfermedad = request.GET.get("enfermedad", "")
     filtro_estado = request.GET.get("estado", "")
 
-    todos = construir_lista_pacientes()
-    stats = estadisticas_dashboard(todos)
-    filtrados = filtrar_items_dashboard(todos, q, filtro_enfermedad, filtro_estado)
+    todos = listar_pacientes()
+    estadisticas = estadisticas_pacientes(todos)
+    filtrados = filtrar_pacientes(todos, q, filtro_enfermedad, filtro_estado)
 
     paginator = Paginator(filtrados, 10)
-    page_obj = paginator.get_page(request.GET.get("page", 1))
+    page_obect = paginator.get_page(request.GET.get("page", 1))
 
     alertas_qs = (
         Alerta.objects
@@ -36,8 +36,8 @@ def dashboard_medico(request):
         .order_by("-fecha")[:3]
     )
     alertas_recientes = [
-        {"alerta": a, "valor_str": _valor_str(a.metrica) if a.metrica else None}
-        for a in alertas_qs
+        {"alerta": alerta, "valor_str": formatear_valor_metrica(alerta.metrica) if alerta.metrica else None}
+        for alerta in alertas_qs
     ]
 
     params = request.GET.copy()
@@ -45,16 +45,13 @@ def dashboard_medico(request):
     filtros_qs = params.urlencode()
 
     return render(request, "core/dashboard.html", {
-        **stats,
-        "total_alertas_pendientes": stats["alertas_count"],
-        "pacientes_list": page_obj,
-        "page_obj": page_obj,
+        **estadisticas,
+        "page_object": page_obect,
         "q": q,
         "filtro_enfermedad": filtro_enfermedad,
         "filtro_estado": filtro_estado,
-        "enfermedades_choices": Paciente.ENFERMEDADES,
-        "hay_filtros": bool(q or filtro_enfermedad or filtro_estado),
         "filtros_qs": filtros_qs,
+        "enfermedades_choices": Paciente.ENFERMEDADES,
         "alertas_recientes": alertas_recientes,
     })
 
@@ -62,12 +59,13 @@ def dashboard_medico(request):
 @login_required
 @medico_required
 def conteo_alertas_json(request):
-    todos = construir_lista_pacientes()
+    todos = listar_pacientes()
     estables = sum(1 for i in todos if i["estado"] == "estable")
     observacion = sum(1 for i in todos if i["estado"] == "riesgo")
     criticos = sum(1 for i in todos if i["estado"] == "critico")
-    criticas = Alerta.objects.filter(resuelta=False, criticidad="critica").count()
-    enf_counter = Counter(i["paciente"].get_enfermedad_display() for i in todos)
+    criticas = Alerta.objects.filter(resuelta = False, criticidad = "critica").count()
+    enfermedad_counter = Counter(i["paciente"].get_enfermedad_display() for i in todos)
+    
     return JsonResponse({
         "total": len(todos),
         "estables": estables,
@@ -76,6 +74,6 @@ def conteo_alertas_json(request):
         "criticas": criticas,
         "enfermedades": [
             {"label": k, "count": v}
-            for k, v in sorted(enf_counter.items(), key=lambda x: -x[1])
+            for k, v in sorted(enfermedad_counter.items(), key=lambda x: -x[1])
         ],
     })

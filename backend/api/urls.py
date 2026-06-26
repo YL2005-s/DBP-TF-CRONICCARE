@@ -17,4 +17,5 @@ urlpatterns = [
     path('mis-prescripciones/', views.mis_prescripciones, name='mis_prescripciones'),
     path('registrar-metrica/', views.registrar_metrica_movil, name='registrar_metrica_movil'),
     path('mi-plan/', views.mi_plan_cuidados, name='mi_plan'),
+    path('mis-consultas/', views.mis_consultas, name='mis_consultas'),
 ]

@@ -120,7 +120,7 @@
         </div>
         <div class="flex items-center justify-between mb-5">
           <div class="flex items-center gap-3">
-            <p class="text-[0.8rem] text-muted">{{ periodo_label }} · {{ total_grafica }} registro{{ total_grafica|pluralize:"s" }}</p>
+            <p class="text-[0.8rem] text-muted">{{ periodo_label }} · {{ total_mediciones }} registro{{ total_mediciones|pluralize:"s" }}</p>
             {% if tendencia %}
             <span class="inline-flex items-center gap-1 text-[0.75rem] font-semibold px-2 py-0.5 rounded-full
               {% if tendencia.neutro %}bg-border text-muted
@@ -137,7 +137,7 @@
             <a href="?periodo=mes&tipo={{ tipo_grafica }}" class="no-underline px-3 py-1.5 rounded-lg font-semibold text-[0.73rem] font-sans border-[1.5px] {% if periodo == 'mes' %}bg-primary text-white border-primary{% else %}bg-transparent text-primary border-primary hover:bg-primary-light{% endif %}">Este mes</a>
           </div>
         </div>
-        {% if total_grafica == 0 %}
+        {% if total_mediciones == 0 %}
         <div class="py-16 px-6 text-center text-muted text-[0.85rem]">No hay mediciones registradas en este período.</div>
         {% else %}
         <canvas id="graficaMetricas" height="90"></canvas>
@@ -391,9 +391,9 @@
   </div>
 </div>
 
-{{ chart_labels|json_script:"chart-labels" }}
-{{ chart_valores|json_script:"chart-valores" }}
-{{ chart_alertas|json_script:"chart-alertas" }}
+{{ grafica_etiquetas |json_script:"chart-labels" }}
+{{ grafica_valores|json_script:"chart-valores" }}
+{{ grafica_alertas|json_script:"chart-alertas" }}
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>

@@ -140,15 +140,14 @@ def tipo_metrica_principal(enfermedad):
     return _TIPO_METRICA_POR_ENFERMEDAD.get(enfermedad, "glucosa")
 
 
-def clasificar_paciente(paciente, alertas_list, metricas_list, ultimas_24h, ultimas_48h):
-    """Devuelve el estado ('critico', 'riesgo', 'estable') de un paciente."""
+def clasificar_paciente(alertas_list, metricas_list, ultimas_24h, ultimas_48h):
     alertas_criticas = [
-        a for a in alertas_list
-        if a.criticidad == "critica" and a.fecha >= ultimas_24h
+        alerta for alerta in alertas_list
+        if alerta.criticidad == "critica" and alerta.fecha >= ultimas_24h
     ]
     metricas_alerta = [
-        m for m in metricas_list
-        if m.alerta and m.fecha >= ultimas_48h
+        metrica for metrica in metricas_list
+        if metrica.alerta and metrica.fecha >= ultimas_48h
     ]
     if alertas_criticas:
         return "critico"
@@ -157,62 +156,56 @@ def clasificar_paciente(paciente, alertas_list, metricas_list, ultimas_24h, ulti
     return "estable"
 
 
-def construir_lista_pacientes():
-    """
-    Retorna una lista de dicts con {paciente, estado, ultima_metrica}
-    para todos los pacientes, ordenada para el dashboard.
-    """
+def listar_pacientes():
     ahora = timezone.now()
     ultimas_24h = ahora - timedelta(hours=24)
     ultimas_48h = ahora - timedelta(hours=48)
 
     pacientes_qs = Paciente.objects.prefetch_related(
-        Prefetch("metricas", queryset=Metrica.objects.order_by("-fecha")),
-        Prefetch("alertas", queryset=Alerta.objects.filter(resuelta=False)),
+        Prefetch("metricas", queryset = Metrica.objects.order_by("-fecha")),
+        Prefetch("alertas", queryset = Alerta.objects.filter(resuelta=False)),
     )
 
     resultado = []
-    for p in pacientes_qs:
-        metricas_p = list(p.metricas.all())
+    for paciente in pacientes_qs:
+        metricas_paciente = list(paciente.metricas.all())
         estado = clasificar_paciente(
-            p,
-            list(p.alertas.all()),
-            metricas_p,
+            list(paciente.alertas.all()),
+            metricas_paciente,
             ultimas_24h,
             ultimas_48h,
         )
         resultado.append({
-            "paciente": p,
+            "paciente": paciente,
             "estado": estado,
-            "ultima_metrica": metricas_p[0] if metricas_p else None,
+            "ultima_metrica": metricas_paciente[0] if metricas_paciente else None,
         })
     return resultado
 
 
-def estadisticas_dashboard(items):
-    """Calcula conteos y datos del gráfico a partir de la lista de items."""
+def estadisticas_pacientes(items):
     estables = sum(1 for i in items if i["estado"] == "estable")
-    riesgo  = sum(1 for i in items if i["estado"] == "riesgo")
+    riesgo = sum(1 for i in items if i["estado"] == "riesgo")
     criticos = sum(1 for i in items if i["estado"] == "critico")
     alertas_criticas = Alerta.objects.filter(resuelta=False, criticidad="critica").count()
 
-    enf_counter = Counter(i["paciente"].get_enfermedad_display() for i in items)
+    enfermedades_counter = Counter(i["paciente"].get_enfermedad_display() for i in items)
     enfermedades_chart = json.dumps([
         {"label": k, "count": v}
-        for k, v in sorted(enf_counter.items(), key=lambda x: -x[1])
+        for k, v in sorted(enfermedades_counter.items(), key=lambda x: -x[1])
     ])
 
     return {
         "total_pacientes": len(items),
-        "pacientes_seguros": estables,
-        "pacientes_riesgo": riesgo,
-        "pacientes_criticos": criticos,
-        "alertas_count": alertas_criticas,
-        "enfermedades_chart_json": enfermedades_chart,
+        "estables": estables,
+        "riesgo": riesgo,
+        "criticos": criticos,
+        "alertas_criticas": alertas_criticas,
+        "enfermedades_chart": enfermedades_chart,
     }
 
 
-def filtrar_items_dashboard(items, q="", filtro_enfermedad="", filtro_estado=""):
+def filtrar_pacientes(items, q = "", filtro_enfermedad = "", filtro_estado = ""):
     if q:
         q_lower = q.lower()
         items = [
@@ -226,13 +219,12 @@ def filtrar_items_dashboard(items, q="", filtro_enfermedad="", filtro_estado="")
     return items
 
 
-def _valor_str(m):
-    """Formatea el valor de una métrica. Presión: '120/80', resto: '98.6'."""
-    if m is None:
+def formatear_valor_metrica(metrica):
+    if metrica is None:
         return None
-    if m.tipo == "presion" and m.valor_diastolica is not None:
-        return f"{float(m.valor):.0f}/{float(m.valor_diastolica):.0f}"
-    return f"{float(m.valor):.1f}"
+    if metrica.tipo == "presion" and metrica.valor_diastolica is not None:
+        return f"{float(metrica.valor):.0f} / {float(metrica.valor_diastolica):.0f}"
+    return f"{float(metrica.valor):.1f}"
 
 
 def ultimas_metricas_por_tipo(paciente):
@@ -243,14 +235,14 @@ def ultimas_metricas_por_tipo(paciente):
             "tipo": tipo,
             "label": label,
             "unidad": unidad,
-            "valor_str": _valor_str(m),
+            "valor_str": formatear_valor_metrica(m),
             "alerta": m.alerta if m else False,
             "fecha_str": m.fecha.strftime("%d/%m %H:%M") if m else None,
         })
     return resultado
 
 
-def datos_grafica(paciente, tipo_grafica, periodo):
+def datos_grafico(paciente, tipo_grafica, periodo):
     ahora = timezone.now()
 
     if periodo == "semana":
@@ -287,7 +279,7 @@ def datos_grafica(paciente, tipo_grafica, periodo):
     }
 
 
-def umbrales_para_grafica(paciente, tipo_grafica):
+def umbrales_grafico(paciente, tipo_grafica):
     umbral_custom = paciente.umbrales.filter(tipo_metrica=tipo_grafica).first()
     if umbral_custom:
         return umbral_custom.valor_min, umbral_custom.valor_max
@@ -299,25 +291,25 @@ def umbrales_para_grafica(paciente, tipo_grafica):
     return None, None
 
 
-def construir_timeline(paciente, metricas, notas):
+def obtener_timeline(paciente, metricas, notas):
     eventos = []
 
-    for m in metricas[:60]:
+    for metrica in metricas[:60]:
         eventos.append({
             "tipo": "metrica",
-            "fecha": m.fecha,
-            "fecha_str": m.fecha.strftime("%d %b %Y · %H:%M"),
-            "metrica": m,
-            "valor_str": _valor_str(m),
-            "unidad": UNIDADES_METRICA.get(m.tipo, ""),
+            "fecha": metrica.fecha,
+            "fecha_str": metrica.fecha.strftime("%d %b %Y · %H:%M"),
+            "metrica": metrica,
+            "valor_str": formatear_valor_metrica(metrica),
+            "unidad": UNIDADES_METRICA.get(metrica.tipo, ""),
         })
 
-    for n in notas[:40]:
+    for nota in notas[:40]:
         eventos.append({
             "tipo": "nota",
-            "fecha": n.fecha,
-            "fecha_str": n.fecha.strftime("%d %b %Y · %H:%M"),
-            "nota": n,
+            "fecha": nota.fecha,
+            "fecha_str": nota.fecha.strftime("%d %b %Y · %H:%M"),
+            "nota": nota,
         })
 
     alertas_resueltas = (
@@ -331,7 +323,7 @@ def construir_timeline(paciente, metricas, notas):
             "fecha": a.fecha,
             "fecha_str": a.fecha.strftime("%d %b %Y · %H:%M"),
             "alerta": a,
-            "valor_str": _valor_str(a.metrica) if a.metrica else None,
+            "valor_str": formatear_valor_metrica(a.metrica) if a.metrica else None,
             "unidad": UNIDADES_METRICA.get(a.metrica.tipo, "") if a.metrica else "",
         })
 
@@ -340,13 +332,12 @@ def construir_timeline(paciente, metricas, notas):
 
 
 def crear_paciente(nombre, dni, enfermedad, fecha_nac, telefono):
-    """Crea User + Paciente + FichaMedica en una transacción atómica."""
     import secrets
     password_temp = secrets.token_urlsafe(8)
 
     with transaction.atomic():
-        user = User.objects.create_user(username=dni, password=password_temp)
-        grupo_paciente, _ = Group.objects.get_or_create(name="Paciente")
+        user = User.objects.create_user(username = dni, password = password_temp)
+        grupo_paciente, _ = Group.objects.get_or_create(name = "Paciente")
         user.groups.add(grupo_paciente)
         paciente = Paciente.objects.create(
             user = user,
@@ -356,7 +347,7 @@ def crear_paciente(nombre, dni, enfermedad, fecha_nac, telefono):
             fecha_nacimiento = fecha_nac if fecha_nac else None,
             telefono = telefono,
         )
-        FichaMedica.objects.create(paciente=paciente)
+        FichaMedica.objects.create(paciente = paciente)
 
     return paciente, password_temp
 
@@ -382,7 +373,7 @@ def formatear_alertas(alertas_qs):
 
         resultado.append({
             "alerta": a,
-            "valor_str": _valor_str(a.metrica) if a.metrica else None,
+            "valor_str": formatear_valor_metrica(a.metrica) if a.metrica else None,
             "fecha_str": a.fecha.strftime("%d/%m %H:%M"),
             "umbral_str": umbral_str,
         })
