@@ -49,6 +49,11 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Reporte PDF
         </a>
+        <a href="{% url 'exportar_csv' paciente.id %}"
+           class="flex items-center gap-2 bg-surface border border-border text-text2 px-4 py-2 rounded-lg font-semibold text-[0.82rem] font-sans no-underline transition-colors duration-200 hover:bg-bg hover:text-text">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
+          Exportar CSV
+        </a>
         <a href="{% url 'ficha_medica' paciente.id %}"
            class="flex items-center gap-2 bg-surface border border-border text-text2 px-4 py-2 rounded-lg font-semibold text-[0.82rem] font-sans no-underline transition-colors duration-200 hover:bg-bg hover:text-text">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
@@ -96,6 +101,11 @@
         <button id="btn-historial" onclick="switchMainTab('historial')"
           class="px-5 py-3.5 text-[0.82rem] font-semibold border-b-2 border-transparent text-muted -mb-px bg-transparent cursor-pointer transition-colors duration-150 hover:text-primary">
           Historial
+        </button>
+        <button id="btn-timeline" onclick="switchMainTab('timeline')"
+          class="px-5 py-3.5 text-[0.82rem] font-semibold border-b-2 border-transparent text-muted -mb-px bg-transparent cursor-pointer transition-colors duration-150 hover:text-primary flex items-center gap-2">
+          Timeline
+          <span class="text-[0.68rem] font-bold bg-border text-muted px-1.5 py-0.5 rounded-full leading-none">{{ timeline_eventos|length }}</span>
         </button>
       </div>
 
@@ -167,6 +177,80 @@
         <div class="py-16 px-6 text-center text-muted text-[0.85rem]">No existen mediciones históricas para este paciente.</div>
         {% endfor %}
       </div>
+
+      <div id="panel-timeline" class="hidden p-6">
+        {% if timeline_eventos %}
+        <div class="relative">
+          <div class="absolute left-4.75 top-2 bottom-2 w-px bg-border"></div>
+          <div class="flex flex-col gap-0">
+            {% for ev in timeline_eventos %}
+            <div class="relative flex gap-4 pb-5 last:pb-0">
+
+              {% if ev.tipo == 'metrica' %}
+              <div class="shrink-0 w-10 h-10 rounded-full flex items-center justify-center z-10
+                {% if ev.metrica.alerta %}bg-alert-light border-2 border-alert/30{% else %}bg-primary-light border-2 border-primary/20{% endif %}">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+                  class="{% if ev.metrica.alerta %}text-alert{% else %}text-primary{% endif %}">
+                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                </svg>
+              </div>
+              <div class="flex-1 min-w-0 pt-1.5">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="text-[0.85rem] font-bold text-text">{{ ev.metrica.get_tipo_display }}</span>
+                  <span class="font-mono font-semibold text-[0.85rem] {% if ev.metrica.alerta %}text-alert{% else %}text-text{% endif %}">{{ ev.valor_str }} <span class="font-normal text-muted text-[0.75rem]">{{ ev.unidad }}</span></span>
+                  {% if ev.metrica.alerta %}
+                  <span class="bg-alert-light text-alert text-[0.68rem] font-bold px-1.5 py-0.5 rounded-full">Alerta</span>
+                  {% else %}
+                  <span class="bg-ok-light text-ok text-[0.68rem] font-bold px-1.5 py-0.5 rounded-full">Normal</span>
+                  {% endif %}
+                </div>
+                <p class="text-[0.72rem] text-muted mt-0.5">{{ ev.fecha_str }}</p>
+              </div>
+
+              {% elif ev.tipo == 'nota' %}
+              <div class="shrink-0 w-10 h-10 rounded-full bg-ok-light border-2 border-ok/20 flex items-center justify-center z-10">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-ok">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+                </svg>
+              </div>
+              <div class="flex-1 min-w-0 pt-1.5">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="text-[0.85rem] font-bold text-text">Nota clínica</span>
+                  <span class="text-[0.72rem] text-muted">{{ ev.nota.medico.get_full_name|default:ev.nota.medico.username }}</span>
+                </div>
+                <p class="text-[0.82rem] text-text2 mt-1 leading-relaxed">{{ ev.nota.texto }}</p>
+                <p class="text-[0.72rem] text-muted mt-0.5">{{ ev.fecha_str }}</p>
+              </div>
+
+              {% elif ev.tipo == 'alerta' %}
+              <div class="shrink-0 w-10 h-10 rounded-full flex items-center justify-center z-10
+                {% if ev.alerta.criticidad == 'critica' %}bg-alert-light border-2 border-alert/30{% else %}bg-warning-light border-2 border-warning/30{% endif %}">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+                  class="{% if ev.alerta.criticidad == 'critica' %}text-alert{% else %}text-warning{% endif %}">
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                </svg>
+              </div>
+              <div class="flex-1 min-w-0 pt-1.5">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="text-[0.85rem] font-bold text-text">Alerta resuelta</span>
+                  <span class="{% if ev.alerta.criticidad == 'critica' %}bg-alert-light text-alert{% else %}bg-warning-light text-warning{% endif %} text-[0.68rem] font-bold px-1.5 py-0.5 rounded-full">{{ ev.alerta.get_criticidad_display }}</span>
+                </div>
+                {% if ev.alerta.metrica %}
+                <p class="text-[0.8rem] text-muted mt-0.5 font-mono">{{ ev.alerta.metrica.get_tipo_display }}: {{ ev.valor_str }} {{ ev.unidad }}</p>
+                {% endif %}
+                <p class="text-[0.72rem] text-muted mt-0.5">{{ ev.fecha_str }}</p>
+              </div>
+              {% endif %}
+
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% else %}
+        <div class="py-16 text-center text-muted text-[0.85rem]">No hay actividad registrada para este paciente.</div>
+        {% endif %}
+      </div>
+
     </div>
 
     <div class="sticky top-6 flex flex-col gap-4">
@@ -394,15 +478,16 @@
   }
 
   function switchMainTab(name) {
-    const evolucion = name === 'evolucion';
-    document.getElementById('panel-evolucion').classList.toggle('hidden', !evolucion);
-    document.getElementById('panel-historial').classList.toggle('hidden', evolucion);
-    ['btn-evolucion', 'btn-historial'].forEach(id => {
-      const isActive = (id === 'btn-' + name);
-      document.getElementById(id).classList.toggle('border-primary', isActive);
-      document.getElementById(id).classList.toggle('text-primary', isActive);
-      document.getElementById(id).classList.toggle('border-transparent', !isActive);
-      document.getElementById(id).classList.toggle('text-muted', !isActive);
+    ['evolucion', 'historial', 'timeline'].forEach(t => {
+      const panel = document.getElementById('panel-' + t);
+      const btn = document.getElementById('btn-' + t);
+      if (!panel || !btn) return;
+      const isActive = t === name;
+      panel.classList.toggle('hidden', !isActive);
+      btn.classList.toggle('border-primary', isActive);
+      btn.classList.toggle('text-primary', isActive);
+      btn.classList.toggle('border-transparent', !isActive);
+      btn.classList.toggle('text-muted', !isActive);
     });
     sessionStorage.setItem('tab_detalle', name);
   }

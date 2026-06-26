@@ -17,6 +17,7 @@ urlpatterns = [
     path('alertas/<int:alerta_id>/resolver/', views.resolver_alerta, name='resolver_alerta'),
 
     path('paciente/<int:paciente_id>/pdf/', views.exportar_pdf_paciente, name='exportar_pdf'),
+    path('paciente/<int:paciente_id>/csv/', views.exportar_csv_metricas, name='exportar_csv'),
     path('reporte-general/', views.reporte_general_pdf, name='reporte_general'),
 
     path('auditoria/', views.auditoria, name='auditoria'),

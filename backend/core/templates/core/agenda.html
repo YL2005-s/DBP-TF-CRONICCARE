@@ -68,7 +68,6 @@
     <div>
       <div class="bg-surface rounded-xl border border-border shadow-sm overflow-hidden">
 
-        <!-- Tabs -->
         <div class="flex border-b border-border px-2 pt-1 gap-1">
           <button onclick="switchTab('hoy')" id="tab-hoy"
             class="tab-btn px-4 py-2.5 text-[0.8rem] font-semibold rounded-t-lg border-b-2 transition-colors duration-150 cursor-pointer bg-transparent border-primary text-primary">
@@ -86,7 +85,6 @@
           </button>
         </div>
 
-        <!-- Tab: Hoy -->
         <div id="panel-hoy" class="tab-panel active">
           {% if hoy_citas %}
           {% for c in hoy_citas %}
@@ -130,7 +128,6 @@
           {% endif %}
         </div>
 
-        <!-- Tab: Próximas -->
         <div id="panel-proximas" class="tab-panel">
           {% if semana_citas %}
           {% for c in semana_citas %}
@@ -175,7 +172,6 @@
           {% endif %}
         </div>
 
-        <!-- Tab: Realizadas -->
         <div id="panel-realizadas" class="tab-panel">
           {% if recientes %}
           {% for c in recientes %}

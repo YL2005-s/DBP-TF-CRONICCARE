@@ -10,6 +10,54 @@
     <p class="text-muted text-[0.9rem] mt-1">Registro de accesos y acciones médicas</p>
   </div>
 
+  {# Filtros #}
+  <form method="get" class="bg-surface border border-border rounded-xl p-4 mb-5 flex flex-wrap gap-3 items-end shadow-sm">
+    <div class="flex flex-col gap-1 min-w-40">
+      <label class="text-[0.72rem] font-bold uppercase tracking-[0.04em] text-muted">Médico</label>
+      <select name="medico" class="bg-bg border border-border rounded-lg px-3 py-2 text-[0.82rem] text-text focus:outline-none focus:border-primary">
+        <option value="">Todos</option>
+        {% for m in medicos %}
+        <option value="{{ m.id }}" {% if filtros.medico == m.id|stringformat:"s" %}selected{% endif %}>
+          {{ m.get_full_name|default:m.username }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="flex flex-col gap-1 min-w-45">
+      <label class="text-[0.72rem] font-bold uppercase tracking-[0.04em] text-muted">Acción</label>
+      <select name="accion" class="bg-bg border border-border rounded-lg px-3 py-2 text-[0.82rem] text-text focus:outline-none focus:border-primary">
+        <option value="">Todas</option>
+        {% for value, label in acciones %}
+        <option value="{{ value }}" {% if filtros.accion == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="flex flex-col gap-1">
+      <label class="text-[0.72rem] font-bold uppercase tracking-[0.04em] text-muted">Desde</label>
+      <input type="date" name="desde" value="{{ filtros.desde }}"
+             class="bg-bg border border-border rounded-lg px-3 py-2 text-[0.82rem] text-text focus:outline-none focus:border-primary">
+    </div>
+
+    <div class="flex flex-col gap-1">
+      <label class="text-[0.72rem] font-bold uppercase tracking-[0.04em] text-muted">Hasta</label>
+      <input type="date" name="hasta" value="{{ filtros.hasta }}"
+             class="bg-bg border border-border rounded-lg px-3 py-2 text-[0.82rem] text-text focus:outline-none focus:border-primary">
+    </div>
+
+    <button type="submit"
+            class="bg-primary text-white px-5 py-2 rounded-lg font-semibold text-[0.82rem] hover:bg-primary/90 transition-colors">
+      Filtrar
+    </button>
+    {% if filtros.medico or filtros.accion or filtros.desde or filtros.hasta %}
+    <a href="{% url 'auditoria' %}"
+       class="px-4 py-2 rounded-lg border border-border text-[0.82rem] text-muted font-semibold hover:bg-bg transition-colors no-underline">
+      Limpiar
+    </a>
+    {% endif %}
+  </form>
+
   <div class="bg-surface rounded-xl border border-border shadow-sm p-0 overflow-hidden">
 
     <div class="grid px-5 py-2.5 text-[0.72rem] font-bold text-muted uppercase tracking-[0.04em] bg-bg border-b border-border" style="grid-template-columns: 1.6fr 1.2fr 1.2fr 1.4fr 1fr">
@@ -60,11 +108,44 @@
     </div>
     {% empty %}
     <div class="py-16 px-6 text-center text-muted text-[0.85rem]">
-      No hay registros de auditoría todavía.
+      No hay registros de auditoría para los filtros seleccionados.
     </div>
     {% endfor %}
 
   </div>
+
+  {# Paginación #}
+  {% if logs.paginator.num_pages > 1 %}
+  <div class="flex items-center justify-between mt-5">
+    <p class="text-[0.8rem] text-muted">
+      Mostrando {{ logs.start_index }}–{{ logs.end_index }} de {{ logs.paginator.count }} registros
+    </p>
+    <div class="flex gap-1.5">
+      {% if logs.has_previous %}
+      <a href="?{% if filtros.medico %}medico={{ filtros.medico }}&{% endif %}{% if filtros.accion %}accion={{ filtros.accion }}&{% endif %}{% if filtros.desde %}desde={{ filtros.desde }}&{% endif %}{% if filtros.hasta %}hasta={{ filtros.hasta }}&{% endif %}page={{ logs.previous_page_number }}"
+         class="px-3 py-1.5 rounded-lg border border-border text-[0.82rem] text-muted font-semibold hover:bg-surface transition-colors no-underline">
+        ← Anterior
+      </a>
+      {% endif %}
+      {% for num in logs.paginator.page_range %}
+        {% if logs.number == num %}
+        <span class="px-3 py-1.5 rounded-lg bg-primary text-white text-[0.82rem] font-semibold">{{ num }}</span>
+        {% elif num >= logs.number|add:"-2" and num <= logs.number|add:"2" %}
+        <a href="?{% if filtros.medico %}medico={{ filtros.medico }}&{% endif %}{% if filtros.accion %}accion={{ filtros.accion }}&{% endif %}{% if filtros.desde %}desde={{ filtros.desde }}&{% endif %}{% if filtros.hasta %}hasta={{ filtros.hasta }}&{% endif %}page={{ num }}"
+           class="px-3 py-1.5 rounded-lg border border-border text-[0.82rem] text-muted font-semibold hover:bg-surface transition-colors no-underline">
+          {{ num }}
+        </a>
+        {% endif %}
+      {% endfor %}
+      {% if logs.has_next %}
+      <a href="?{% if filtros.medico %}medico={{ filtros.medico }}&{% endif %}{% if filtros.accion %}accion={{ filtros.accion }}&{% endif %}{% if filtros.desde %}desde={{ filtros.desde }}&{% endif %}{% if filtros.hasta %}hasta={{ filtros.hasta }}&{% endif %}page={{ logs.next_page_number }}"
+         class="px-3 py-1.5 rounded-lg border border-border text-[0.82rem] text-muted font-semibold hover:bg-surface transition-colors no-underline">
+        Siguiente →
+      </a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
 
 </div>
 {% endblock %}

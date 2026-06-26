@@ -86,7 +86,7 @@
           </a>
         </li>
 
-        {% if request.user.is_superuser or request.user.groups.all %}
+        {% if request.user.is_superuser or request.user.groups.exists %}
         <li>
           <a
             href="{% url 'auditoria' %}"

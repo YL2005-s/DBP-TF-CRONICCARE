@@ -96,33 +96,23 @@ class Metrica(models.Model):
     ]
 
     UMBRALES = {
-        'diabetes_t2':  {'tipo': 'glucosa', 'min': None, 'max': 126},
-        'diabetes_t1':  {'tipo': 'glucosa', 'min': None, 'max': 126},
-        'hipertension': {'tipo': 'presion', 'min': None, 'max': 140},
+        'diabetes_t2': {'tipo': 'glucosa', 'min': None, 'max': 126},
+        'diabetes_t1': {'tipo': 'glucosa', 'min': None, 'max': 126},
+        'hipertension': {'tipo': 'presion', 'min': None, 'max': 140, 'max_diastolica': 90},
         'asma': {'tipo': 'saturacion', 'min': 90, 'max': None},
         'epoc': {'tipo': 'saturacion', 'min': 88, 'max': None},
-        'irc': {'tipo': 'presion', 'min': None, 'max': 130},
+        'irc': {'tipo': 'presion', 'min': None, 'max': 130, 'max_diastolica': 85},
         'icc': {'tipo': 'frecuencia', 'min': 50, 'max': 100},
         'artritis': {'tipo': 'frecuencia', 'min': None, 'max': 100},
     }
 
     paciente = models.ForeignKey(Paciente, on_delete = models.CASCADE, related_name = 'metricas')
-    tipo = models.CharField(max_length = 50, choices = TIPOS)
+    tipo = models.CharField(max_length=50, choices=TIPOS)
     valor = models.FloatField()
-    alerta = models.BooleanField(default = False)
-    fecha = models.DateTimeField(auto_now_add = True)
-
-    @classmethod
-    def calcular_alerta(cls, enfermedad, valor):
-        umbral = cls.UMBRALES.get(enfermedad)
-        if not umbral:
-            return False
-        if umbral['max'] is not None and valor > umbral['max']:
-            return True
-        if umbral['min'] is not None and valor < umbral['min']:
-            return True
-        return False
-
+    valor_diastolica = models.FloatField(null = True, blank = True)
+    alerta = models.BooleanField(default=False)
+    fecha = models.DateTimeField(auto_now_add=True)
+    
 
 class Alerta(models.Model):
     CRITICIDAD = [
@@ -302,6 +292,9 @@ class LogAcceso(models.Model):
         ('marcar_alerta', 'Marcar alerta como resuelta'),
         ('generar_pdf', 'Generar reporte PDF'),
         ('registrar_paciente', 'Registrar paciente'),
+        ('completar_consulta', 'Completar consulta'),
+        ('actualizar_ficha', 'Actualizar ficha médica'),
+        ('actualizar_perfil', 'Actualizar perfil médico'),
     ]
     
     medico = models.ForeignKey(User, on_delete = models.SET_NULL, null = True, related_name = 'logs')

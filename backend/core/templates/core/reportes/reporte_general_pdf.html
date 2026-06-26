@@ -122,7 +122,7 @@
             <td>{{ p.get_enfermedad_display }}</td>
             <td>{{ p.fecha_registro|date:"d/m/Y" }}</td>
             <td>
-              {% with ultima=p.metricas.last %}
+              {% with ultima=p.metricas_list.0 %}
               {% if ultima %}
                 <span class="td-mono">{{ ultima.valor }}</span>
                 <span class="td-unit">
@@ -139,7 +139,7 @@
               {% endwith %}
             </td>
             <td>
-              {% with ultima=p.metricas.last %}
+              {% with ultima=p.metricas_list.0 %}
               {% if ultima and ultima.alerta %}
                 <span class="alert">&#9679; Alerta</span>
               {% else %}

@@ -1,27 +1,18 @@
+from django.core.cache import cache
+
 from core.models import Alerta
+
+_CACHE_KEY  = "total_alertas_criticas"
+_CACHE_SECS = 60
 
 
 def alertas_pendientes(request):
     if not request.user.is_authenticated:
-        return {
-            'total_alertas_pendientes': 0,
-            'alertas_recientes': [],
-        }
+        return {'total_alertas_pendientes': 0}
 
-    alertas = list(Alerta.objects.filter(
-        resuelta=False,
-        criticidad='critica',
-    ).select_related('paciente', 'metrica').order_by('-fecha'))
+    total = cache.get(_CACHE_KEY)
+    if total is None:
+        total = Alerta.objects.filter(resuelta=False, criticidad='critica').count()
+        cache.set(_CACHE_KEY, total, _CACHE_SECS)
 
-    alertas_data = [
-        {
-            'alerta': alerta,
-            'valor_str': f"{float(alerta.metrica.valor):.1f}" if alerta.metrica else None,
-        }
-        for alerta in alertas[:3]
-    ]
-
-    return {
-        'total_alertas_pendientes': len(alertas),
-        'alertas_recientes': alertas_data,
-    }
+    return {'total_alertas_pendientes': total}
