@@ -29,7 +29,7 @@ class MetricaAdapter(private val items: List<Metrica>) :
 
         b.tvTipo.text = tipoLabel(metrica.tipo)
         b.tvTipoIcon.text = tipoEmoji(metrica.tipo)
-        b.tvValor.text = formatValor(metrica.valor)
+        b.tvValor.text = formatValorMetrica(metrica)
         b.tvUnidad.text = unidad(metrica.tipo)
         b.tvFecha.text = formatFecha(metrica.fecha)
 
@@ -74,9 +74,13 @@ class MetricaAdapter(private val items: List<Metrica>) :
         else -> ""
     }
 
-    private fun formatValor(valor: Double): String {
-        return if (valor == valor.toLong().toDouble()) valor.toLong().toString()
-        else "%.1f".format(valor)
+    private fun formatValorMetrica(metrica: Metrica): String {
+        return if (metrica.tipo == "presion" && metrica.valorDiastolica != null) {
+            "${metrica.valor.toLong()}/${metrica.valorDiastolica.toLong()}"
+        } else {
+            val v = metrica.valor
+            if (v == v.toLong().toDouble()) v.toLong().toString() else "%.1f".format(v)
+        }
     }
 
     private fun formatFecha(fecha: String): String {

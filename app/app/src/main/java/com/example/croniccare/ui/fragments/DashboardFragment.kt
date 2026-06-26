@@ -1,4 +1,4 @@
-package com.example.croniccare.ui.activities
+package com.example.croniccare.ui.fragments
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -9,11 +9,13 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.example.croniccare.adapters.MetricaAdapter
-import com.example.croniccare.adapters.PlanAdapter
+import com.example.croniccare.ui.adapters.MetricaAdapter
+import com.example.croniccare.ui.adapters.PlanAdapter
 import com.example.croniccare.data.network.RetrofitClient
 import com.example.croniccare.databinding.ActivityDashboardBinding
+import com.example.croniccare.utils.ScreenStateManager
 import com.example.croniccare.utils.SessionManager
+import com.example.croniccare.utils.applyStatusBarTopPadding
 import kotlinx.coroutines.launch
 import androidx.core.graphics.toColorInt
 import com.example.croniccare.MainActivity
@@ -24,6 +26,8 @@ class DashboardFragment : Fragment() {
     private var _binding: ActivityDashboardBinding? = null
     private val binding get() = _binding!!
     private lateinit var session: SessionManager
+    private var metricasManager: ScreenStateManager? = null
+    private var planManager: ScreenStateManager? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -34,13 +38,30 @@ class DashboardFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        binding.layoutHeader.applyStatusBarTopPadding()
         session = SessionManager(requireContext())
         setupHeader()
         setupListeners()
+
+        metricasManager = ScreenStateManager(
+            skeleton = binding.skeletonMetricas.root,
+            content  = binding.rvMetricasRecientes,
+            empty    = binding.tvSinMetricas
+        )
+        planManager = ScreenStateManager(
+            skeleton = binding.skeletonPlan.root,
+            content  = binding.rvPlanHoy,
+            empty    = binding.tvSinPlan
+        )
+
         loadData()
     }
 
     override fun onDestroyView() {
+        metricasManager?.destroy()
+        planManager?.destroy()
+        metricasManager = null
+        planManager = null
         super.onDestroyView()
         _binding = null
     }
@@ -67,12 +88,32 @@ class DashboardFragment : Fragment() {
             findNavController().navigate(R.id.nav_historial)
         }
 
+        binding.bannerAlertasCriticas.setOnClickListener {
+            findNavController().navigate(R.id.nav_alertas)
+        }
+
         binding.btnVerPlan.setOnClickListener {
             findNavController().navigate(R.id.nav_plan)
+        }
+
+        binding.cardAccesoAlertas.setOnClickListener {
+            findNavController().navigate(R.id.nav_alertas)
+        }
+
+        binding.cardAccesoMedicamentos.setOnClickListener {
+            findNavController().navigate(R.id.nav_prescripciones)
+        }
+
+        binding.cardAccesoConsultas.setOnClickListener {
+            findNavController().navigate(R.id.nav_consultas)
         }
     }
 
     private fun loadData() {
+        metricasManager?.showLoading()
+        planManager?.showLoading()
+        binding.bannerAlertasCriticas.visibility = View.GONE
+
         viewLifecycleOwner.lifecycleScope.launch {
             try {
                 val metricasResponse = RetrofitClient.instance.getMisMetricas()
@@ -81,20 +122,19 @@ class DashboardFragment : Fragment() {
                     val recientes = metricas.take(3)
 
                     if (recientes.isEmpty()) {
-                        binding.tvSinMetricas.visibility = View.VISIBLE
-                        binding.rvMetricasRecientes.visibility = View.GONE
+                        metricasManager?.showEmpty()
                     } else {
-                        binding.tvSinMetricas.visibility = View.GONE
-                        binding.rvMetricasRecientes.visibility = View.VISIBLE
                         binding.rvMetricasRecientes.layoutManager = LinearLayoutManager(requireContext())
                         binding.rvMetricasRecientes.adapter = MetricaAdapter(recientes)
+                        metricasManager?.showContent()
                     }
 
-                    val hasAlerta = recientes.any { it.alerta }
+                    val hasAlerta = metricas.any { it.alerta }
                     updateEstado(hasAlerta)
+                    binding.bannerAlertasCriticas.visibility = if (hasAlerta) View.VISIBLE else View.GONE
                 }
             } catch (_: Exception) {
-                if (_binding != null) binding.tvSinMetricas.visibility = View.VISIBLE
+                if (_binding != null) metricasManager?.showEmpty()
             }
         }
 
@@ -105,24 +145,25 @@ class DashboardFragment : Fragment() {
                     val plan = planResponse.body() ?: emptyList()
 
                     if (plan.isEmpty()) {
-                        binding.tvSinPlan.visibility = View.VISIBLE
-                        binding.rvPlanHoy.visibility = View.GONE
+                        planManager?.showEmpty()
+                        binding.tvResumenPlan.visibility = View.GONE
                     } else {
-                        binding.tvSinPlan.visibility = View.GONE
-                        binding.rvPlanHoy.visibility = View.VISIBLE
                         binding.rvPlanHoy.layoutManager = LinearLayoutManager(requireContext())
                         binding.rvPlanHoy.adapter = PlanAdapter(plan.take(3))
+                        planManager?.showContent()
+                        binding.tvResumenPlan.text = "Hoy: ${plan.size} tareas"
+                        binding.tvResumenPlan.visibility = View.VISIBLE
                     }
                 }
             } catch (_: Exception) {
-                if (_binding != null) binding.tvSinPlan.visibility = View.VISIBLE
+                if (_binding != null) planManager?.showEmpty()
             }
         }
     }
 
     private fun updateEstado(hasAlerta: Boolean) {
         val px10 = (10 * resources.displayMetrics.density).toInt()
-        val px4 = (4 * resources.displayMetrics.density).toInt()
+        val px4  = (4  * resources.displayMetrics.density).toInt()
         if (hasAlerta) {
             binding.tvEstado.text = getString(R.string.status_riesgo)
             binding.tvEstado.setBackgroundResource(R.drawable.bg_status_warning)

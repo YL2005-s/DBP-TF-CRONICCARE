@@ -34,23 +34,23 @@ def _umbral_custom(paciente, tipo_metrica_key):
 
 
 def _umbral_estatico(enfermedad, tipo):
-    h = Metrica.UMBRALES.get(enfermedad)
-    if h and h['tipo'] == tipo:
-        return h.get('min'), h.get('max')
+    umbral_enfermedad = Metrica.UMBRALES.get(enfermedad)
+    if umbral_enfermedad and umbral_enfermedad['tipo'] == tipo:
+        return umbral_enfermedad.get('min'), umbral_enfermedad.get('max')
     return None, None
 
 
 def _umbral_estatico_diastolica(enfermedad):
-    h = Metrica.UMBRALES.get(enfermedad)
-    if h and h['tipo'] == 'presion':
-        return h.get('min_diastolica'), h.get('max_diastolica')
+    umbral_enfermedad = Metrica.UMBRALES.get(enfermedad)
+    if umbral_enfermedad and umbral_enfermedad['tipo'] == 'presion':
+        return umbral_enfermedad.get('min_diastolica'), umbral_enfermedad.get('max_diastolica')
     return None, None
 
 
-def _nivel_por_desviacion(pct):
-    if pct > 15:
+def _nivel_por_desviacion(porcentaje_desviacion):
+    if porcentaje_desviacion > 15:
         return 'critica'
-    if pct > 5:
+    if porcentaje_desviacion > 5:
         return 'moderada'
     return 'leve'
 
@@ -69,7 +69,6 @@ _ORDEN_CRITICIDAD = {'leve': 1, 'moderada': 2, 'critica': 3}
 
 
 def _max_criticidad(*niveles):
-    """Devuelve el nivel más grave entre varios (o None si todos son None)."""
     validos = [n for n in niveles if n is not None]
     if not validos:
         return None

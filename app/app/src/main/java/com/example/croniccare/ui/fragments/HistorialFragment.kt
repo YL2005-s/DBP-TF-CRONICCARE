@@ -1,4 +1,4 @@
-package com.example.croniccare.ui.activities
+package com.example.croniccare.ui.fragments
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -7,15 +7,20 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.example.croniccare.adapters.MetricaAdapter
+import com.example.croniccare.ui.adapters.MetricaAdapter
+import com.example.croniccare.data.network.ApiResult
 import com.example.croniccare.data.network.RetrofitClient
+import com.example.croniccare.data.network.safeApiCall
 import com.example.croniccare.databinding.ActivityHistorialBinding
+import com.example.croniccare.utils.ScreenStateManager
+import com.example.croniccare.utils.applyStatusBarTopPadding
 import kotlinx.coroutines.launch
 
 class HistorialFragment : Fragment() {
 
     private var _binding: ActivityHistorialBinding? = null
     private val binding get() = _binding!!
+    private var stateManager: ScreenStateManager? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -26,45 +31,40 @@ class HistorialFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        binding.layoutHeader.applyStatusBarTopPadding()
+        stateManager = ScreenStateManager(
+            skeleton = binding.skeletonList.root,
+            content  = binding.rvHistorial,
+            empty    = binding.layoutEmpty
+        )
         loadHistorial()
     }
 
     override fun onDestroyView() {
+        stateManager?.destroy()
+        stateManager = null
         super.onDestroyView()
         _binding = null
     }
 
     private fun loadHistorial() {
-        binding.progressHistorial.visibility = View.VISIBLE
-        binding.rvHistorial.visibility = View.GONE
-        binding.layoutEmpty.visibility = View.GONE
+        stateManager?.showLoading()
 
         viewLifecycleOwner.lifecycleScope.launch {
-            try {
-                val response = RetrofitClient.instance.getMisMetricas()
-                if (response.isSuccessful) {
-                    val metricas = response.body() ?: emptyList()
-                    binding.progressHistorial.visibility = View.GONE
-
+            when (val result = safeApiCall { RetrofitClient.instance.getMisMetricas() }) {
+                is ApiResult.Success -> {
+                    if (_binding == null) return@launch
+                    val metricas = result.data
                     if (metricas.isEmpty()) {
-                        binding.layoutEmpty.visibility = View.VISIBLE
+                        stateManager?.showEmpty()
                     } else {
-                        binding.rvHistorial.visibility = View.VISIBLE
                         binding.rvHistorial.layoutManager = LinearLayoutManager(requireContext())
                         binding.rvHistorial.adapter = MetricaAdapter(metricas)
+                        stateManager?.showContent()
                     }
-                } else {
-                    showEmpty()
                 }
-            } catch (_: Exception) {
-                showEmpty()
+                is ApiResult.Error -> stateManager?.showEmpty()
             }
         }
-    }
-
-    private fun showEmpty() {
-        if (_binding == null) return
-        binding.progressHistorial.visibility = View.GONE
-        binding.layoutEmpty.visibility = View.VISIBLE
     }
 }
