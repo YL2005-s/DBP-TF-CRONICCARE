@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import date, datetime, timedelta
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -77,22 +77,32 @@ def agenda(request):
 def _crear_consulta(request, hoy):
     paciente_id = request.POST.get("paciente_id")
     tipo = request.POST.get("tipo", "control")
-    fecha_hora = request.POST.get("fecha_hora")
+    fecha_hora_str = request.POST.get("fecha_hora")
     motivo = request.POST.get("motivo", "").strip()
 
-    if paciente_id and fecha_hora and motivo:
-        paciente = get_object_or_404(Paciente, pk = paciente_id)
-        Consulta.objects.create(
-            paciente = paciente,
-            medico = request.user,
-            tipo = tipo,
-            fecha_hora = fecha_hora,
-            motivo = motivo,
-        )
-        messages.success(request, f"Cita agendada para {paciente.nombre}.")
-    else:
+    if not (paciente_id and fecha_hora_str and motivo):
         messages.error(request, "Paciente, fecha/hora y motivo son obligatorios.")
+        return redirect("agenda")
 
+    try:
+        fecha_hora = datetime.fromisoformat(fecha_hora_str)
+    except ValueError:
+        messages.error(request, "La fecha y hora de la cita no tienen un formato válido.")
+        return redirect("agenda")
+
+    if fecha_hora.date() < hoy:
+        messages.error(request, "No se puede agendar una cita en una fecha pasada.")
+        return redirect("agenda")
+
+    paciente = get_object_or_404(Paciente, pk=paciente_id)
+    Consulta.objects.create(
+        paciente = paciente,
+        medico = request.user,
+        tipo = tipo,
+        fecha_hora = fecha_hora,
+        motivo = motivo,
+    )
+    messages.success(request, f"Cita agendada para {paciente.nombre}.")
     return redirect("agenda")
 
 
@@ -105,8 +115,19 @@ def completar_consulta(request, consulta_id):
     consulta = get_object_or_404(Consulta, pk = consulta_id)
     consulta.diagnostico  = request.POST.get("diagnostico", "").strip()
     consulta.indicaciones = request.POST.get("indicaciones", "").strip()
-    proxima = request.POST.get("proxima_cita")
-    consulta.proxima_cita = proxima if proxima else None
+    proxima_str = request.POST.get("proxima_cita")
+    if proxima_str:
+        try:
+            proxima_date = date.fromisoformat(proxima_str)
+        except ValueError:
+            messages.error(request, "La fecha de próxima cita no tiene un formato válido.")
+            return redirect("agenda")
+        if proxima_date < date.today():
+            messages.error(request, "La próxima cita no puede programarse en una fecha pasada.")
+            return redirect("agenda")
+        consulta.proxima_cita = proxima_date
+    else:
+        consulta.proxima_cita = None
     consulta.estado = "realizada"
     consulta.save()
 

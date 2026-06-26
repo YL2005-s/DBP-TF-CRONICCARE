@@ -213,6 +213,15 @@ def registrar_paciente(request):
     if User.objects.filter(username=dni).exists():
         return render_error(f"Ya existe un usuario con el DNI {dni}.")
 
+    fecha_nac_str = request.POST.get("fecha_nacimiento")
+    if fecha_nac_str:
+        try:
+            fecha_nac_parsed = date.fromisoformat(fecha_nac_str)
+        except ValueError:
+            return render_error("La fecha de nacimiento no tiene un formato válido.")
+        if fecha_nac_parsed > date.today():
+            return render_error("La fecha de nacimiento no puede ser una fecha futura.")
+
     paciente, password_temp = crear_paciente(
         nombre = nombre,
         dni = dni,
@@ -263,8 +272,19 @@ def _manejar_post_ficha(request, paciente, ficha, paciente_id):
     accion = request.POST.get("accion")
 
     if accion == "actualizar_ficha":
-        fecha_nac = request.POST.get("fecha_nacimiento")
-        paciente.fecha_nacimiento = fecha_nac if fecha_nac else None
+        fecha_nac_str = request.POST.get("fecha_nacimiento")
+        if fecha_nac_str:
+            try:
+                fecha_nac = date.fromisoformat(fecha_nac_str)
+            except ValueError:
+                messages.error(request, "La fecha de nacimiento no tiene un formato válido.")
+                return
+            if fecha_nac > date.today():
+                messages.error(request, "La fecha de nacimiento no puede ser una fecha futura.")
+                return
+            paciente.fecha_nacimiento = fecha_nac
+        else:
+            paciente.fecha_nacimiento = None
         paciente.telefono = request.POST.get("telefono", "").strip()
         paciente.save()
 
@@ -289,8 +309,18 @@ def _manejar_post_ficha(request, paciente, ficha, paciente_id):
     elif accion == "agregar_prescripcion":
         medicamento = request.POST.get("medicamento", "").strip()
         dosis = request.POST.get("dosis", "").strip()
-        fecha_inicio = request.POST.get("fecha_inicio")
-        if medicamento and dosis and fecha_inicio:
+        fecha_inicio_str = request.POST.get("fecha_inicio")
+        fecha_fin_str = request.POST.get("fecha_fin") or None
+        if medicamento and dosis and fecha_inicio_str:
+            try:
+                fecha_inicio = date.fromisoformat(fecha_inicio_str)
+                fecha_fin = date.fromisoformat(fecha_fin_str) if fecha_fin_str else None
+            except ValueError:
+                messages.error(request, "Las fechas de la prescripción no tienen un formato válido.")
+                return
+            if fecha_fin is not None and fecha_fin < fecha_inicio:
+                messages.error(request, "La fecha de fin no puede ser anterior a la fecha de inicio.")
+                return
             Prescripcion.objects.create(
                 paciente = paciente,
                 medico = request.user,
@@ -300,7 +330,7 @@ def _manejar_post_ficha(request, paciente, ficha, paciente_id):
                 frecuencia = request.POST.get("frecuencia"),
                 indicaciones = request.POST.get("indicaciones", "").strip(),
                 fecha_inicio = fecha_inicio,
-                fecha_fin = request.POST.get("fecha_fin") or None,
+                fecha_fin = fecha_fin,
             )
             messages.success(request, f"Prescripción de {medicamento} agregada.")
         else:
